@@ -13,7 +13,7 @@ from app.schemas.product import (
 
 router = APIRouter()
 
-@router.get("/products/", response_model=List[Product])
+@router.get("/products/", response_model=None)
 def read_products(
     skip: int = Query(0, description="Elementos a saltar"), 
     limit: int = Query(100, description="Límite de elementos a retornar"),
@@ -23,7 +23,13 @@ def read_products(
     Obtiene la lista de productos disponibles.
     """
     products = product_service.get_products(db, skip=skip, limit=limit)
-    return products
+    # Obtener el total de productos para la paginación
+    total = product_service.get_total_products(db)
+    
+    return {
+        "items": products,
+        "total": total
+    }
 
 @router.get("/products/featured", response_model=List[Product])
 def read_featured_products(

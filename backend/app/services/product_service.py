@@ -11,6 +11,12 @@ def get_product(db: Session, product_id: int):
 def get_products(db: Session, skip: int = 0, limit: int = 100):
     return db.query(Product).offset(skip).limit(limit).all()
 
+def get_total_products(db: Session):
+    """
+    Obtiene el número total de productos disponibles.
+    """
+    return db.query(Product).count()
+
 def get_featured_products(db: Session, limit: int = 3):
     """
     Obtiene los productos marcados como destacados.

@@ -9,17 +9,20 @@ export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalProducts, setTotalProducts] = useState(0);
+  const pageSize = 6; // Número de productos por página
 
   useEffect(() => {
     const fetchProducts = async () => {
       try {
         setLoading(true);
-        const data = await ProductsApi.getProducts();
+        const response = await ProductsApi.getProducts(currentPage, pageSize);
         
-        console.log('Productos originales:', data);
+        console.log('Productos originales:', response.products);
         
         // Adaptar los datos del backend al formato esperado por el frontend
-        const adaptedProducts = data.map(product => {
+        const adaptedProducts = response.products.map(product => {
           console.log(`Producto ${product.id} antes de adaptar:`, product);
           console.log(`basePrice recibido:`, product.basePrice, typeof product.basePrice);
           
@@ -40,6 +43,7 @@ export default function ProductsPage() {
         console.log('Productos adaptados finales:', adaptedProducts);
         
         setProducts(adaptedProducts);
+        setTotalProducts(response.total);
         setError(null);
       } catch (err) {
         console.error('Error al cargar productos:', err);
@@ -50,7 +54,45 @@ export default function ProductsPage() {
     };
 
     fetchProducts();
-  }, []);
+  }, [currentPage, pageSize]);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo(0, 0);
+  };
+
+  // Calcular el número total de páginas
+  const totalPages = Math.ceil(totalProducts / pageSize);
+
+  // Generar números de página para mostrar en la paginación
+  const getPageNumbers = () => {
+    const maxPagesToShow = 5;
+    
+    if (totalPages <= maxPagesToShow) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+    
+    // Si estamos en las primeras páginas
+    if (currentPage <= Math.ceil(maxPagesToShow / 2)) {
+      return [1, 2, 3, 4, '...', totalPages];
+    }
+    
+    // Si estamos en las últimas páginas
+    if (currentPage > totalPages - Math.ceil(maxPagesToShow / 2)) {
+      return [1, '...', totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+    }
+    
+    // Si estamos en el medio
+    return [
+      1,
+      '...',
+      currentPage - 1,
+      currentPage,
+      currentPage + 1,
+      '...',
+      totalPages
+    ];
+  };
 
   if (loading) {
     return (
@@ -73,43 +115,90 @@ export default function ProductsPage() {
   return (
     <div>
       <header className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Nuestras Bicicletas</h1>
-        <p className="text-gray-600 mt-2">
+        <h1 className="text-3xl font-bold text-secondary mb-2">Nuestras Bicicletas</h1>
+        <p className="text-secondary-light">
           Selecciona un modelo para comenzar tu personalización
         </p>
       </header>
 
       {products.length === 0 ? (
-        <p className="text-center text-gray-500">No hay bicicletas disponibles en este momento.</p>
+        <p className="text-center text-secondary-light">No hay bicicletas disponibles en este momento.</p>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {products.map((product) => (
-            <div key={product.id} className="card">
-              <div className="h-48 bg-gray-200 relative">
-                <Image
-                  src={product.image || 'https://images.unsplash.com/photo-1576435728678-68d0fbf94e91?q=80&w=1200'}
-                  alt={product.name}
-                  fill
-                  style={{ objectFit: 'cover' }}
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                  unoptimized={true}
-                />
-              </div>
-              <div className="p-6">
-                <h2 className="text-xl font-semibold mb-2">{product.name}</h2>
-                <p className="text-gray-600 mb-4">{product.description || 'Bicicleta personalizable con múltiples opciones'}</p>
-                <div className="flex justify-between items-center">
-                  <span className="text-xl font-bold text-primary">
-                    Desde €{(product.basePrice || 0).toFixed(2)}
-                  </span>
-                  <Link href={`/products/${product.id}/customize`} className="btn btn-primary">
-                    Personalizar
-                  </Link>
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {products.map((product) => (
+              <div key={product.id} className="card transition-transform hover:translate-y-[-5px]">
+                <div className="h-48 bg-gray-200 relative">
+                  <Image
+                    src={product.image || 'https://images.unsplash.com/photo-1576435728678-68d0fbf94e91?q=80&w=1200'}
+                    alt={product.name}
+                    fill
+                    style={{ objectFit: 'cover' }}
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    unoptimized={true}
+                  />
+                </div>
+                <div className="p-6">
+                  <h2 className="text-xl font-semibold mb-2 text-secondary">{product.name}</h2>
+                  <p className="text-secondary-light mb-4">{product.description || 'Bicicleta personalizable con múltiples opciones'}</p>
+                  <div className="flex justify-between items-center">
+                    <span className="text-xl font-bold text-primary">
+                      Desde €{(product.basePrice || 0).toFixed(2)}
+                    </span>
+                    <Link href={`/products/${product.id}/customize`} className="btn btn-primary">
+                      Personalizar
+                    </Link>
+                  </div>
                 </div>
               </div>
+            ))}
+          </div>
+          
+          {/* Paginación */}
+          {totalPages > 1 && (
+            <div className="flex justify-center mt-12">
+              <nav className="flex items-center space-x-2" aria-label="Paginación">
+                <button 
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className={`px-3 py-1 rounded ${currentPage === 1 ? 'text-gray-400 cursor-not-allowed' : 'text-secondary hover:bg-gray-100'}`}
+                  aria-label="Página anterior"
+                >
+                  &laquo;
+                </button>
+                
+                {getPageNumbers().map((page, index) => (
+                  <React.Fragment key={index}>
+                    {page === '...' ? (
+                      <span className="px-3 py-1">...</span>
+                    ) : (
+                      <button
+                        onClick={() => typeof page === 'number' && handlePageChange(page)}
+                        className={`px-3 py-1 rounded ${
+                          currentPage === page
+                            ? 'bg-primary text-white'
+                            : 'text-secondary hover:bg-gray-100'
+                        }`}
+                        aria-current={currentPage === page ? 'page' : undefined}
+                      >
+                        {page}
+                      </button>
+                    )}
+                  </React.Fragment>
+                ))}
+                
+                <button 
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className={`px-3 py-1 rounded ${currentPage === totalPages ? 'text-gray-400 cursor-not-allowed' : 'text-secondary hover:bg-gray-100'}`}
+                  aria-label="Página siguiente"
+                >
+                  &raquo;
+                </button>
+              </nav>
             </div>
-          ))}
-        </div>
+          )}
+        </>
       )}
     </div>
   );

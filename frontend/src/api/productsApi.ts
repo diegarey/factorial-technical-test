@@ -21,9 +21,17 @@ export const ProductsApi = {
   /**
    * Obtiene la lista de todos los productos
    */
-  getProducts: async (): Promise<Product[]> => {
-    const response = await apiClient.get('/api/products/');
-    return response.data.map(transformProductData);
+  getProducts: async (page: number = 1, pageSize: number = 9): Promise<{products: Product[], total: number}> => {
+    const skip = (page - 1) * pageSize;
+    const response = await apiClient.get('/api/products/', {
+      params: { skip, limit: pageSize }
+    });
+    
+    // El backend ahora devuelve un objeto con items y total
+    const products = response.data.items.map(transformProductData);
+    const total = response.data.total || 0;
+    
+    return { products, total };
   },
 
   /**
