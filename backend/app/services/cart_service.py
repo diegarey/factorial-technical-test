@@ -1,0 +1,103 @@
+from sqlalchemy.orm import Session
+from app.models.cart import Cart, CartItem, CartItemOption
+from app.models.product import Product, PartOption
+from app.schemas.cart import CartCreate, CartItemCreate
+from app.services.product_service import calculate_price, validate_compatibility
+from typing import List
+
+def get_cart(db: Session, cart_id: int):
+    return db.query(Cart).filter(Cart.id == cart_id).first()
+
+def create_cart(db: Session, cart: CartCreate):
+    db_cart = Cart(**cart.dict())
+    db.add(db_cart)
+    db.commit()
+    db.refresh(db_cart)
+    return db_cart
+
+def add_to_cart(db: Session, cart_id: int, product_id: int, selected_option_ids: List[int], quantity: int = 1):
+    """
+    Añade un producto configurado al carrito.
+    """
+    # Validar que las opciones seleccionadas sean compatibles
+    if not validate_compatibility(db, selected_option_ids):
+        raise ValueError("Las opciones seleccionadas no son compatibles")
+    
+    # Verificar que todas las opciones estén en stock
+    options = db.query(PartOption).filter(PartOption.id.in_(selected_option_ids)).all()
+    for option in options:
+        if not option.in_stock:
+            raise ValueError(f"La opción '{option.name}' no está disponible")
+    
+    # Calcular el precio total
+    price = calculate_price(db, selected_option_ids)
+    
+    # Crear el ítem del carrito
+    db_cart_item = CartItem(
+        cart_id=cart_id,
+        product_id=product_id,
+        price_snapshot=price,
+        quantity=quantity
+    )
+    db.add(db_cart_item)
+    db.commit()
+    db.refresh(db_cart_item)
+    
+    # Agregar las opciones seleccionadas al ítem
+    for option_id in selected_option_ids:
+        db_cart_item_option = CartItemOption(
+            cart_item_id=db_cart_item.id,
+            part_option_id=option_id
+        )
+        db.add(db_cart_item_option)
+    
+    db.commit()
+    return db_cart_item
+
+def get_cart_items(db: Session, cart_id: int):
+    """
+    Obtiene todos los ítems en un carrito con sus opciones.
+    """
+    return db.query(CartItem).filter(CartItem.cart_id == cart_id).all()
+
+def update_cart_item_quantity(db: Session, cart_item_id: int, quantity: int):
+    """
+    Actualiza la cantidad de un ítem en el carrito.
+    """
+    db_cart_item = db.query(CartItem).filter(CartItem.id == cart_item_id).first()
+    if not db_cart_item:
+        raise ValueError("Ítem no encontrado en el carrito")
+    
+    db_cart_item.quantity = quantity
+    db.commit()
+    db.refresh(db_cart_item)
+    return db_cart_item
+
+def remove_cart_item(db: Session, cart_item_id: int):
+    """
+    Elimina un ítem del carrito.
+    """
+    db_cart_item = db.query(CartItem).filter(CartItem.id == cart_item_id).first()
+    if not db_cart_item:
+        raise ValueError("Ítem no encontrado en el carrito")
+    
+    db.delete(db_cart_item)
+    db.commit()
+    return True
+
+def get_or_create_cart(db: Session, user_id: str = None):
+    """
+    Obtiene o crea un carrito para un usuario o sesión.
+    """
+    if user_id:
+        # Si hay un ID de usuario, intentar encontrar su carrito
+        cart = db.query(Cart).filter(Cart.user_id == user_id).first()
+        if cart:
+            return cart
+    
+    # Si no hay carrito o no hay usuario, crear uno nuevo
+    new_cart = Cart(user_id=user_id)
+    db.add(new_cart)
+    db.commit()
+    db.refresh(new_cart)
+    return new_cart 
