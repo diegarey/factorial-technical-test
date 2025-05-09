@@ -36,14 +36,24 @@ def add_to_cart(db: Session, cart_id: int, product_id: int, selected_option_ids:
         if not option.in_stock:
             raise ValueError(f"La opción '{option.name}' no está disponible")
     
-    # Calcular el precio total
-    price = calculate_price(db, selected_option_ids)
+    # Obtener el producto para acceder a su precio base
+    product = db.query(Product).filter(Product.id == product_id).first()
+    if not product:
+        raise ValueError(f"Producto con ID {product_id} no encontrado")
     
-    # Crear el ítem del carrito
+    # Calcular el precio de las opciones
+    options_price = calculate_price(db, selected_option_ids)
+    
+    # Sumar el precio base del producto y el precio de las opciones
+    total_price = product.base_price + options_price
+    
+    print(f"Añadiendo al carrito - Producto ID: {product_id}, Precio base: {product.base_price}, Precio opciones: {options_price}, Precio total: {total_price}")
+    
+    # Crear el ítem del carrito con el precio total
     db_cart_item = CartItem(
         cart_id=cart_id,
         product_id=product_id,
-        price_snapshot=price,
+        price_snapshot=total_price,
         quantity=quantity
     )
     db.add(db_cart_item)
