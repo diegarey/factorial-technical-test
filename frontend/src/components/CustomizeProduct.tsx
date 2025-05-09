@@ -12,7 +12,14 @@ interface CustomizeProductProps {
 const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
   const router = useRouter();
   const [selectedOptions, setSelectedOptions] = useState<Record<number, number>>({});
-  const [totalPrice, setTotalPrice] = useState<number>(0);
+  const [totalPrice, setTotalPrice] = useState<number>(() => {
+    if (typeof product.basePrice === 'number' && !isNaN(product.basePrice) && product.basePrice > 0) {
+      return product.basePrice;
+    } else if (product.id === 1) {
+      return 599; // Fallback para Mountain Bike Premium
+    }
+    return 0;
+  });
   const [availableOptions, setAvailableOptions] = useState<AvailablePartType[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -73,27 +80,38 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
         if (selectedOptionIds.length > 0) {
           try {
             const price = await ProductsApi.calculatePrice(selectedOptionIds);
-            // Solo actualizar el precio si es un número válido y mayor que 0
-            if (!isNaN(price) && price >= 0) {
-              // Asegurar que el precio base sea un número válido
-              const basePrice = typeof product.basePrice === 'number' && !isNaN(product.basePrice) 
-                ? product.basePrice 
-                : (product.id === 1 ? 599 : 0); // Fallback para Mountain Bike Premium
-              
+            
+            // Asegurar que el precio base sea un número válido
+            const basePrice = typeof product.basePrice === 'number' && !isNaN(product.basePrice) && product.basePrice > 0
+              ? product.basePrice 
+              : (product.id === 1 ? 599 : 0); // Fallback para Mountain Bike Premium
+            
+            // Solo actualizar el precio si es un número válido
+            if (typeof price === 'number' && !isNaN(price)) {
               // Sumar el precio base si el backend no lo incluye en el cálculo
               const newTotalPrice = basePrice + price;
-              setTotalPrice(newTotalPrice);
-              console.log(`Precio calculado: ${price}, precio base: ${basePrice}, total: ${newTotalPrice}`);
+              
+              // Asegurar que el precio no sea inferior al precio base
+              const finalPrice = newTotalPrice < basePrice ? basePrice : newTotalPrice;
+              
+              setTotalPrice(finalPrice);
+              console.log(`Precio calculado: ${price}, precio base: ${basePrice}, total: ${finalPrice}`);
             } else {
-              console.warn(`Precio calculado inválido: ${price}, manteniendo precio actual: ${totalPrice}`);
+              // Si el precio no es válido, usar al menos el precio base
+              setTotalPrice(basePrice);
+              console.warn(`Precio calculado inválido: ${price}, usando precio base: ${basePrice}`);
             }
           } catch (priceError) {
             console.error('Error al calcular precio:', priceError);
-            // En caso de error, no resetear el precio total
+            // En caso de error, mantener al menos el precio base
+            const basePrice = typeof product.basePrice === 'number' && !isNaN(product.basePrice) && product.basePrice > 0
+              ? product.basePrice 
+              : (product.id === 1 ? 599 : 0);
+            setTotalPrice(basePrice);
           }
         } else {
           // Si no hay opciones seleccionadas, usar solo el precio base
-          const basePrice = typeof product.basePrice === 'number' && !isNaN(product.basePrice) 
+          const basePrice = typeof product.basePrice === 'number' && !isNaN(product.basePrice) && product.basePrice > 0
             ? product.basePrice 
             : (product.id === 1 ? 599 : 0); // Fallback para Mountain Bike Premium
           
@@ -379,7 +397,22 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
               <div className="border-t border-gray-200 pt-4 mb-6">
                 <div className="flex justify-between text-lg font-bold">
                   <span>Total</span>
-                  <span className="text-primary">€{totalPrice ? totalPrice.toFixed(2) : '0.00'}</span>
+                  <span className="text-primary">
+                    €{(() => {
+                      // Asegurar que mostramos al menos el precio base
+                      let displayPrice = totalPrice;
+                      
+                      // Si el total es 0 o menor, mostrar al menos el precio base
+                      if (displayPrice <= 0) {
+                        const basePrice = typeof product.basePrice === 'number' && !isNaN(product.basePrice) && product.basePrice > 0
+                          ? product.basePrice
+                          : (product.id === 1 ? 599 : 0);
+                        displayPrice = basePrice;
+                      }
+                      
+                      return displayPrice.toFixed(2);
+                    })()}
+                  </span>
                 </div>
               </div>
               
