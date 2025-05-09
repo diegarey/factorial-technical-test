@@ -14,9 +14,8 @@ export default function Home() {
     const fetchFeaturedProducts = async () => {
       try {
         setLoading(true);
-        const data = await ProductsApi.getFeaturedProducts(4); // Aumentamos a 4 productos destacados
+        const data = await ProductsApi.getFeaturedProducts(8);
         
-        // Adaptar los datos del backend al formato esperado por el frontend
         const adaptedProducts = data.map(product => ({
           ...product,
           description: product.description || '',
@@ -38,394 +37,295 @@ export default function Home() {
     fetchFeaturedProducts();
   }, []);
 
-  // Categorías de bicicletas
-  const categories = [
-    {
-      id: 1,
-      name: 'Montaña',
-      description: 'Para rutas off-road y aventuras',
-      image: 'https://images.unsplash.com/photo-1576435728678-68d0fbf94e91?q=80&w=1200',
-      path: '/products?category=mountain'
-    },
-    {
-      id: 2,
-      name: 'Carretera',
-      description: 'Velocidad y rendimiento en asfalto',
-      image: 'https://images.unsplash.com/photo-1485965120184-e220f721d03e?q=80&w=1200',
-      path: '/products?category=road'
-    },
-    {
-      id: 3,
-      name: 'Urbana',
-      description: 'Comodidad para el día a día',
-      image: 'https://images.unsplash.com/photo-1507035895480-2b3156c31fc8?q=80&w=1200',
-      path: '/products?category=urban'
-    },
-    {
-      id: 4,
-      name: 'Eléctrica',
-      description: 'Potencia asistida para cualquier ruta',
-      image: 'https://images.unsplash.com/photo-1571068316344-75bc76f77890?q=80&w=1200',
-      path: '/products?category=electric'
-    }
-  ];
-
-  // Testimonios de clientes
-  const testimonials = [
-    {
-      id: 1,
-      name: 'Ana G.',
-      role: 'Ciclista urbana',
-      content: 'El proceso de personalización fue muy intuitivo. Mi bicicleta es exactamente como la imaginaba y la calidad es excelente.',
-      avatar: 'https://randomuser.me/api/portraits/women/17.jpg'
-    },
-    {
-      id: 2,
-      name: 'Carlos R.',
-      role: 'Ciclista de montaña',
-      content: 'Me encantó poder elegir cada detalle de mi MTB. El servicio al cliente fue excepcional durante todo el proceso.',
-      avatar: 'https://randomuser.me/api/portraits/men/32.jpg'
-    },
-    {
-      id: 3,
-      name: 'Elena M.',
-      role: 'Triatleta',
-      content: 'La bicicleta personalizada superó mis expectativas. Rendimiento perfecto en competiciones y entrenamiento diario.',
-      avatar: 'https://randomuser.me/api/portraits/women/44.jpg'
-    }
-  ];
-
   return (
-    <div>
-      {/* Hero Banner mejorado con imagen de fondo */}
-      <section className="relative h-screen min-h-[600px] flex items-center">
+    <div className="min-h-screen bg-gradient-to-b from-white to-factorialGray overflow-hidden">
+      {/* Hero Banner mejorado con animaciones */}
+      <section className="relative h-screen min-h-[600px] flex items-center overflow-hidden w-full">
         <div className="absolute inset-0 z-0">
           <Image
-            src="https://images.unsplash.com/photo-1541625602330-2277a4c46182?q=80&w=1920"
+            src="https://images.unsplash.com/photo-1517649763962-0c623066013b?q=80&w=1920"
             alt="Ciclismo"
             fill
             style={{ objectFit: 'cover' }}
             priority
+            className="transform scale-105 animate-ken-burns"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/70 to-black/30"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/70 to-transparent"></div>
+          
+          {/* Partículas decorativas */}
+          <div className="absolute inset-0 opacity-30">
+            <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-white rounded-full animate-pulse"></div>
+            <div className="absolute top-1/3 left-1/2 w-2 h-2 bg-white rounded-full animate-pulse delay-75"></div>
+            <div className="absolute top-2/3 left-1/3 w-2 h-2 bg-white rounded-full animate-pulse delay-150"></div>
+            <div className="absolute top-1/2 left-3/4 w-2 h-2 bg-white rounded-full animate-pulse delay-300"></div>
+          </div>
         </div>
         
-        <div className="container mx-auto px-4 relative z-10">
-          <div className="max-w-2xl">
-            <span className="inline-block px-3 py-1 mb-4 text-sm font-medium bg-primary text-white rounded-full">
-              Diseño personalizado
+        <div className="container mx-auto px-6 relative z-10">
+          <div className="max-w-2xl animate-fade-in-up">
+            <span className="inline-block px-4 py-2 mb-6 text-sm font-medium bg-primary/20 text-white rounded-full backdrop-blur-sm border border-primary/30 animate-pulse shadow-lg shadow-primary/20">
+              Diseño exclusivo y personalizado
             </span>
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
-              La bicicleta perfecta, hecha para ti
+            <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold text-white mb-8 leading-tight">
+              Tu bicicleta,<br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-light to-primary animate-gradient-x">tu estilo</span>
             </h1>
-            <p className="text-xl md:text-2xl text-white/90 mb-8">
-              Diseña cada detalle de tu bicicleta ideal y recíbela lista para rodar. Experiencia única, calidad garantizada.
+            <p className="text-xl md:text-2xl text-white/90 mb-10 leading-relaxed">
+              Diseña la bicicleta de tus sueños con nuestro configurador avanzado. Cada detalle, perfectamente adaptado a ti.
             </p>
-            <div className="flex flex-wrap gap-4">
-              <Link href="/products" className="btn btn-primary btn-lg">
-                Comenzar ahora
+            <div className="flex flex-wrap gap-6">
+              <Link 
+                href="/products" 
+                className="btn btn-primary btn-lg group relative overflow-hidden transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-primary/30"
+              >
+                <span className="relative z-10 flex items-center">
+                  Comenzar ahora
+                  <svg className="w-5 h-5 ml-2 transform group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                  </svg>
+                </span>
+                <div className="absolute inset-0 bg-gradient-to-r from-primary-light to-primary opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               </Link>
-              <Link href="#como-funciona" className="btn bg-white/20 text-white hover:bg-white/30 btn-lg backdrop-blur-sm">
-                Cómo funciona
+              <Link 
+                href="#como-funciona" 
+                className="btn bg-white/10 text-white hover:bg-white/20 btn-lg backdrop-blur-sm border border-white/20 transform hover:scale-105 transition-all duration-300 group"
+              >
+                <span className="flex items-center">
+                  Descubre cómo
+                  <svg className="w-5 h-5 ml-2 transform group-hover:rotate-90 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </span>
               </Link>
             </div>
           </div>
         </div>
-      </section>
 
-      {/* Categorías de bicicletas */}
-      <section className="py-16 bg-white">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-secondary mb-4">Explora nuestras categorías</h2>
-            <p className="text-secondary-light max-w-2xl mx-auto">
-              Ofrecemos varios tipos de bicicletas para adaptarnos a tus necesidades, todas personalizables hasta el último detalle
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {categories.map((category) => (
-              <Link key={category.id} href={category.path} className="group">
-                <div className="relative h-60 rounded-factorial overflow-hidden">
-                  <Image
-                    src={category.image}
-                    alt={category.name}
-                    fill
-                    style={{ objectFit: 'cover' }}
-                    className="transition-transform group-hover:scale-105 duration-500"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
-                  <div className="absolute bottom-0 left-0 p-4 w-full">
-                    <h3 className="text-xl font-bold text-white mb-1">{category.name}</h3>
-                    <p className="text-white/80 text-sm">{category.description}</p>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
+        {/* Decorative elements */}
+        <div className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-factorialGray to-transparent"></div>
+        <div className="absolute -bottom-1 left-0 w-full">
+          <svg viewBox="0 0 1920 250" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full">
+            <path fill="currentColor" className="text-factorialGray">
+              <animate 
+                attributeName="d" 
+                dur="20s" 
+                repeatCount="indefinite"
+                values="
+                  M0 128L48 144C96 160 192 192 288 197.3C384 203 480 181 576 160C672 139 768 117 864 128C960 139 1056 181 1152 186.7C1248 192 1344 160 1440 144C1536 128 1632 128 1728 144C1824 160 1920 192 1968 208L2016 224V256H1968C1920 256 1824 256 1728 256C1632 256 1536 256 1440 256C1344 256 1248 256 1152 256C1056 256 960 256 864 256C768 256 672 256 576 256C480 256 384 256 288 256C192 256 96 256 48 256H0V128Z;
+                  M0 160L48 144C96 128 192 96 288 106.7C384 117 480 171 576 192C672 213 768 203 864 186.7C960 171 1056 149 1152 133.3C1248 117 1344 107 1440 122.7C1536 139 1632 181 1728 192C1824 203 1920 181 1968 170.7L2016 160V256H1968C1920 256 1824 256 1728 256C1632 256 1536 256 1440 256C1344 256 1248 256 1152 256C1056 256 960 256 864 256C768 256 672 256 576 256C480 256 384 256 288 256C192 256 96 256 48 256H0V160Z"
+              />
+            </path>
+          </svg>
         </div>
       </section>
 
-      {/* Proceso mejorado con iconos más modernos */}
-      <section id="como-funciona" className="features py-16 bg-factorialGray">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <span className="inline-block px-3 py-1 mb-2 text-xs font-medium bg-primary/10 text-primary rounded-full">
+      {/* Proceso mejorado con más interactividad */}
+      <section id="como-funciona" className="py-24 relative w-full">
+        <div className="container mx-auto px-6">
+          <div className="text-center mb-20">
+            <span className="inline-block px-4 py-2 mb-4 text-sm font-medium bg-primary/10 text-primary rounded-full shadow-lg shadow-primary/5">
               Proceso sencillo
             </span>
-            <h2 className="text-3xl font-bold text-secondary mb-4">Cómo funciona</h2>
-            <p className="text-secondary-light max-w-2xl mx-auto">
+            <h2 className="text-4xl md:text-5xl font-bold text-secondary mb-6">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-secondary to-primary">Cómo funciona</span>
+            </h2>
+            <p className="text-xl text-secondary-light max-w-2xl mx-auto">
               En tres simples pasos, tendrás la bicicleta de tus sueños en la puerta de tu casa
             </p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="feature-card text-center p-8 bg-white rounded-factorial shadow-factorial">
-              <div className="icon mb-6 mx-auto bg-primary/10 w-20 h-20 rounded-full flex items-center justify-center">
-                <svg className="h-10 w-10 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4" />
-                </svg>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+            <div className="feature-card group p-8 bg-white rounded-factorial shadow-factorial transform transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              <div className="relative z-10">
+                <div className="icon mb-8 mx-auto bg-primary/10 w-24 h-24 rounded-2xl flex items-center justify-center transform group-hover:rotate-6 transition-transform duration-500">
+                  <svg className="h-12 w-12 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4" />
+                  </svg>
+                </div>
+                <h3 className="text-2xl font-semibold mb-4 text-secondary group-hover:text-primary transition-colors">1. Personaliza</h3>
+                <p className="text-secondary-light text-lg">
+                  Elige el modelo base y personaliza cada componente según tus preferencias y necesidades.
+                </p>
               </div>
-              <h3 className="text-xl font-semibold mb-3 text-secondary">1. Personaliza</h3>
-              <p className="text-secondary-light">
-                Elige el modelo base y personaliza cada componente según tus preferencias, necesidades y estilo.
-              </p>
             </div>
-            <div className="feature-card text-center p-8 bg-white rounded-factorial shadow-factorial">
-              <div className="icon mb-6 mx-auto bg-primary/10 w-20 h-20 rounded-full flex items-center justify-center">
-                <svg className="h-10 w-10 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                </svg>
+
+            <div className="feature-card group p-8 bg-white rounded-factorial shadow-factorial transform transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              <div className="relative z-10">
+                <div className="icon mb-8 mx-auto bg-primary/10 w-24 h-24 rounded-2xl flex items-center justify-center transform group-hover:rotate-6 transition-transform duration-500">
+                  <svg className="h-12 w-12 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                  </svg>
+                </div>
+                <h3 className="text-2xl font-semibold mb-4 text-secondary group-hover:text-primary transition-colors">2. Compra</h3>
+                <p className="text-secondary-light text-lg">
+                  Proceso de pago seguro y sencillo, con múltiples opciones de financiación.
+                </p>
               </div>
-              <h3 className="text-xl font-semibold mb-3 text-secondary">2. Compra</h3>
-              <p className="text-secondary-light">
-                Proceso de pago seguro y sencillo, con múltiples opciones de pago y financiación disponibles.
-              </p>
             </div>
-            <div className="feature-card text-center p-8 bg-white rounded-factorial shadow-factorial">
-              <div className="icon mb-6 mx-auto bg-primary/10 w-20 h-20 rounded-full flex items-center justify-center">
-                <svg className="h-10 w-10 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-                </svg>
+
+            <div className="feature-card group p-8 bg-white rounded-factorial shadow-factorial transform transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              <div className="relative z-10">
+                <div className="icon mb-8 mx-auto bg-primary/10 w-24 h-24 rounded-2xl flex items-center justify-center transform group-hover:rotate-6 transition-transform duration-500">
+                  <svg className="h-12 w-12 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                  </svg>
+                </div>
+                <h3 className="text-2xl font-semibold mb-4 text-secondary group-hover:text-primary transition-colors">3. Recibe</h3>
+                <p className="text-secondary-light text-lg">
+                  Tu bicicleta llega perfectamente montada y ajustada, lista para rodar.
+                </p>
               </div>
-              <h3 className="text-xl font-semibold mb-3 text-secondary">3. Recibe</h3>
-              <p className="text-secondary-light">
-                Tu bicicleta llega a tu puerta perfectamente ajustada, montada y lista para usar desde el primer momento.
-              </p>
             </div>
           </div>
         </div>
+
+        {/* Background decoration */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-0 right-0 w-1/3 h-1/3 bg-gradient-to-br from-primary/5 to-transparent rounded-bl-full"></div>
+          <div className="absolute bottom-0 left-0 w-1/4 h-1/4 bg-gradient-to-tr from-primary/5 to-transparent rounded-tr-full"></div>
+        </div>
       </section>
       
-      {/* Productos destacados mejorados */}
-      <section className="py-16 bg-white">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <span className="inline-block px-3 py-1 mb-2 text-xs font-medium bg-primary/10 text-primary rounded-full">
+      {/* Productos destacados con diseño mejorado */}
+      <section className="py-24 bg-white relative overflow-hidden w-full">
+        <div className="container mx-auto px-6">
+          <div className="text-center mb-20">
+            <span className="inline-block px-4 py-2 mb-4 text-sm font-medium bg-primary/10 text-primary rounded-full shadow-lg shadow-primary/5">
               Lo más popular
             </span>
-            <h2 className="text-3xl font-bold text-secondary mb-4">Nuestros modelos destacados</h2>
-            <p className="text-secondary-light max-w-2xl mx-auto">
+            <h2 className="text-4xl md:text-5xl font-bold text-secondary mb-6">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-secondary to-primary">Nuestros modelos destacados</span>
+            </h2>
+            <p className="text-xl text-secondary-light max-w-2xl mx-auto">
               Descubre las bicicletas favoritas de nuestros clientes, todas listas para personalizar
             </p>
           </div>
           
           {loading ? (
-            <div className="flex justify-center items-center h-64">
-              <div className="spinner"></div>
-              <span className="ml-2">Cargando bicicletas destacadas...</span>
+            <div className="flex flex-col items-center justify-center h-64">
+              <div className="relative w-20 h-20">
+                <div className="absolute top-0 left-0 w-full h-full border-8 border-primary/20 rounded-full"></div>
+                <div className="absolute top-0 left-0 w-full h-full border-8 border-primary rounded-full animate-spin border-t-transparent"></div>
+              </div>
+              <span className="mt-6 text-lg text-secondary-light">Cargando bicicletas destacadas...</span>
             </div>
           ) : error ? (
-            <p className="text-center text-gray-500">{error}</p>
+            <div className="text-center p-12 bg-red-50 rounded-factorial max-w-2xl mx-auto">
+              <svg className="w-16 h-16 text-red-400 mx-auto mb-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p className="text-red-600 text-lg">{error}</p>
+            </div>
           ) : featuredProducts.length === 0 ? (
-            <p className="text-center text-secondary-light">No hay bicicletas destacadas disponibles en este momento.</p>
+            <div className="text-center p-12 bg-blue-50 rounded-factorial max-w-2xl mx-auto">
+              <svg className="w-16 h-16 text-blue-400 mx-auto mb-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p className="text-secondary-light text-lg">No hay bicicletas destacadas disponibles en este momento.</p>
+            </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {featuredProducts.map((product) => (
-                <div key={product.id} className="group card overflow-hidden transition-all duration-300 hover:shadow-lg">
-                  <div className="h-56 bg-gray-200 relative overflow-hidden">
-                    <Image
-                      src={product.image}
-                      alt={product.name}
-                      fill
-                      style={{ objectFit: 'cover' }}
-                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
-                      priority={product.id === featuredProducts[0]?.id}
-                      className="transition-transform duration-700 group-hover:scale-110"
-                    />
-                    <div className="absolute top-3 right-3 bg-primary text-white text-xs font-bold uppercase py-1 px-2 rounded-full">
-                      Destacado
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                {featuredProducts.map((product) => (
+                  <div key={product.id} className="group relative bg-white rounded-factorial shadow-lg transition-all duration-500 hover:shadow-2xl hover:-translate-y-2 overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-10"></div>
+                    <div className="h-64 relative overflow-hidden">
+                      <Image
+                        src={product.image}
+                        alt={product.name}
+                        fill
+                        style={{ objectFit: 'cover' }}
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+                        priority={product.id === featuredProducts[0]?.id}
+                        className="transition-transform duration-700 group-hover:scale-110"
+                      />
+                      <div className="absolute top-4 right-4 z-20">
+                        <span className="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold bg-primary/90 text-white backdrop-blur-sm shadow-lg">
+                          Destacado
+                        </span>
+                      </div>
+                    </div>
+                    <div className="p-6 relative z-20">
+                      <h3 className="text-xl font-semibold mb-3 text-secondary group-hover:text-primary transition-colors">
+                        {product.name}
+                      </h3>
+                      <p className="text-secondary-light mb-6 line-clamp-2">
+                        {product.description}
+                      </p>
+                      <div className="flex items-center justify-between">
+                        <span className="text-2xl font-bold text-primary">
+                          €{(product.basePrice || 0).toFixed(2)}
+                        </span>
+                        <Link 
+                          href={`/products/${product.id}/customize`} 
+                          className="btn btn-primary transform group-hover:scale-105 transition-transform duration-300 flex items-center gap-2"
+                        >
+                          Personalizar
+                          <svg className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                          </svg>
+                        </Link>
+                      </div>
                     </div>
                   </div>
-                  <div className="p-6">
-                    <h3 className="text-lg font-semibold mb-2 text-secondary group-hover:text-primary transition-colors">
-                      {product.name}
-                    </h3>
-                    <p className="text-secondary-light text-sm mb-4 line-clamp-2">
-                      {product.description}
-                    </p>
-                    <div className="flex justify-between items-center">
-                      <span className="text-lg font-bold text-primary">
-                        Desde €{(product.basePrice || 0).toFixed(2)}
-                      </span>
-                      <Link href={`/products/${product.id}/customize`} className="btn btn-primary">
-                        Personalizar
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+
+              <div className="text-center mt-16">
+                <Link 
+                  href="/products" 
+                  className="inline-flex items-center px-8 py-4 text-lg font-semibold text-primary hover:text-white border-2 border-primary rounded-factorial transition-all duration-300 hover:bg-primary transform hover:-translate-y-1 hover:shadow-lg group"
+                >
+                  Ver todos los modelos
+                  <svg className="w-5 h-5 ml-2 transform group-hover:translate-x-2 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                  </svg>
+                </Link>
+              </div>
+            </>
           )}
-          
-          <div className="text-center mt-10">
-            <Link href="/products" className="btn btn-outline">
-              Ver todos los modelos
-            </Link>
-          </div>
+        </div>
+
+        {/* Background decoration */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-0 right-0 w-1/3 h-1/3 bg-gradient-to-bl from-primary/5 to-transparent rounded-bl-full"></div>
+          <div className="absolute bottom-0 left-0 w-1/4 h-1/4 bg-gradient-to-tr from-primary/5 to-transparent rounded-tr-full"></div>
         </div>
       </section>
       
-      {/* Testimonios de clientes */}
-      <section className="py-16 bg-factorialGray">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <span className="inline-block px-3 py-1 mb-2 text-xs font-medium bg-primary/10 text-primary rounded-full">
-              Testimonios
-            </span>
-            <h2 className="text-3xl font-bold text-secondary mb-4">Lo que dicen nuestros clientes</h2>
-            <p className="text-secondary-light max-w-2xl mx-auto">
-              Experiencias reales de ciclistas que ya disfrutan de sus bicicletas personalizadas
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {testimonials.map((testimonial) => (
-              <div key={testimonial.id} className="bg-white p-6 rounded-factorial shadow-factorial">
-                <div className="flex items-center mb-4">
-                  <div className="w-12 h-12 rounded-full overflow-hidden mr-4">
-                    <Image
-                      src={testimonial.avatar}
-                      alt={testimonial.name}
-                      width={48}
-                      height={48}
-                    />
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-secondary">{testimonial.name}</h4>
-                    <p className="text-sm text-secondary-light">{testimonial.role}</p>
-                  </div>
-                </div>
-                <p className="text-secondary-light italic">"{testimonial.content}"</p>
-                <div className="mt-4 flex">
-                  {[...Array(5)].map((_, i) => (
-                    <svg key={i} className="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
-                    </svg>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
+      {/* CTA final con diseño mejorado */}
+      <section className="py-32 bg-primary relative overflow-hidden w-full">
+        <div className="absolute inset-0">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary-dark to-primary opacity-90"></div>
+          <div className="absolute inset-0 bg-[url('/pattern.svg')] opacity-10"></div>
         </div>
-      </section>
-      
-      {/* Ventajas */}
-      <section className="py-16 bg-white">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <span className="inline-block px-3 py-1 mb-2 text-xs font-medium bg-primary/10 text-primary rounded-full">
-                Nuestras ventajas
-              </span>
-              <h2 className="text-3xl font-bold text-secondary mb-6">Por qué elegir nuestras bicicletas personalizadas</h2>
-              
-              <div className="space-y-6">
-                <div className="flex">
-                  <div className="flex-shrink-0 mt-1">
-                    <svg className="w-5 h-5 text-primary" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"></path>
-                    </svg>
-                  </div>
-                  <div className="ml-4">
-                    <h3 className="text-lg font-semibold text-secondary">Personalización completa</h3>
-                    <p className="mt-1 text-secondary-light">Elige cada aspecto de tu bicicleta, desde el cuadro hasta el color de los detalles.</p>
-                  </div>
-                </div>
-                <div className="flex">
-                  <div className="flex-shrink-0 mt-1">
-                    <svg className="w-5 h-5 text-primary" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"></path>
-                    </svg>
-                  </div>
-                  <div className="ml-4">
-                    <h3 className="text-lg font-semibold text-secondary">Materiales de primera calidad</h3>
-                    <p className="mt-1 text-secondary-light">Utilizamos los mejores componentes y materiales para garantizar durabilidad y rendimiento.</p>
-                  </div>
-                </div>
-                <div className="flex">
-                  <div className="flex-shrink-0 mt-1">
-                    <svg className="w-5 h-5 text-primary" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"></path>
-                    </svg>
-                  </div>
-                  <div className="ml-4">
-                    <h3 className="text-lg font-semibold text-secondary">Garantía extendida</h3>
-                    <p className="mt-1 text-secondary-light">Todos nuestros productos incluyen 2 años de garantía y soporte técnico gratuito.</p>
-                  </div>
-                </div>
-                <div className="flex">
-                  <div className="flex-shrink-0 mt-1">
-                    <svg className="w-5 h-5 text-primary" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"></path>
-                    </svg>
-                  </div>
-                  <div className="ml-4">
-                    <h3 className="text-lg font-semibold text-secondary">Envío y montaje incluidos</h3>
-                    <p className="mt-1 text-secondary-light">Recibe tu bicicleta completamente montada y ajustada, lista para usar desde el primer día.</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="relative h-96 md:h-[500px]">
-              <Image
-                src="https://images.unsplash.com/photo-1511994298241-608e28f14fde?q=80&w=1200"
-                alt="Bicicleta personalizada"
-                fill
-                style={{ objectFit: 'cover' }}
-                className="rounded-factorial"
-              />
-            </div>
-          </div>
-        </div>
-      </section>
-      
-      {/* CTA final */}
-      <section className="py-16 bg-primary relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <svg className="w-full h-full" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
-            <path d="M14,16.6L8.2,22.5v-7.2v-5.2h5.8H20v5.8V22L14,16.6z" fill="white" />
-            <path d="M13.6,59.8l-5.3,5.4v-7.7v-4.8h5.8h5.8v5.8v7.2L13.6,59.8z" fill="white" />
-            <path d="M54.9,59.8l-5.8,5.4v-7.7v-4.8h5.8h5.8v5.8v7.2L54.9,59.8z" fill="white" />
-            <path d="M34.4,37.8l-5.8,5.4v-7.7v-4.8h5.8h5.8v5.8v7.2L34.4,37.8z" fill="white" />
-            <path d="M54.9,37.8l-5.8,5.4v-7.7v-4.8h5.8h5.8v5.8v7.2L54.9,37.8z" fill="white" />
-            <path d="M34.4,15.8l-5.8,5.4v-7.7v-4.8h5.8h5.8v5.8v7.2L34.4,15.8z" fill="white" />
-            <path d="M54.9,15.8l-5.8,5.4v-7.7v-4.8h5.8h5.8v5.8v7.2L54.9,15.8z" fill="white" />
-            <path d="M74.9,16.6L69,22.5v-7.2v-5.2h5.8H81v5.8V22L74.9,16.6z" fill="white" />
-            <path d="M74.5,59.8l-5.3,5.4v-7.7v-4.8h5.8h5.8v5.8v7.2L74.5,59.8z" fill="white" />
-            <path d="M74.5,37.8l-5.3,5.4v-7.7v-4.8h5.8h5.8v5.8v7.2L74.5,37.8z" fill="white" />
-          </svg>
-        </div>
-        <div className="container mx-auto px-4 relative">
-          <div className="max-w-3xl mx-auto text-center">
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">¿Listo para crear tu bicicleta perfecta?</h2>
-            <p className="text-xl text-white/80 mb-8">
+        <div className="container mx-auto px-6 relative">
+          <div className="max-w-4xl mx-auto text-center">
+            <h2 className="text-4xl md:text-6xl font-bold text-white mb-8 leading-tight">
+              ¿Listo para crear la bicicleta de tus sueños?
+            </h2>
+            <p className="text-xl md:text-2xl text-white/90 mb-12 leading-relaxed">
               Comienza ahora el proceso de personalización y pedalea con estilo en tu próxima aventura.
             </p>
-            <Link href="/products" className="btn bg-white text-primary hover:bg-gray-100 btn-lg">
+            <Link 
+              href="/products" 
+              className="inline-flex items-center px-10 py-5 text-xl font-semibold bg-white text-primary rounded-factorial transform hover:scale-105 transition-all duration-300 hover:shadow-2xl hover:shadow-white/20 group"
+            >
               Diseña tu bicicleta
+              <svg className="w-6 h-6 ml-3 transform group-hover:translate-x-2 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+              </svg>
             </Link>
           </div>
+        </div>
+
+        {/* Animated background elements */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-0 left-1/4 w-64 h-64 bg-white/5 rounded-full mix-blend-overlay animate-float"></div>
+          <div className="absolute bottom-0 right-1/3 w-96 h-96 bg-white/5 rounded-full mix-blend-overlay animate-float-delayed"></div>
         </div>
       </section>
     </div>

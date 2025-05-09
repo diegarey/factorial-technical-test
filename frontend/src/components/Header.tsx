@@ -5,7 +5,7 @@ import { ShoppingCartIcon } from '@heroicons/react/24/outline';
 const Header: React.FC = () => {
   return (
     <header className="bg-white shadow-factorial">
-      <div className="container mx-auto px-4">
+      <div className="max-w-screen-2xl mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           <div className="flex-shrink-0">
             <Link href="/" className="text-2xl font-bold flex items-center">
@@ -19,7 +19,7 @@ const Header: React.FC = () => {
               Inicio
             </Link>
             <Link href="/products" className="text-secondary font-medium hover:text-primary">
-              Bicicletas
+              Tienda
             </Link>
           </nav>
           
