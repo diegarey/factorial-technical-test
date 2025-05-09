@@ -68,22 +68,39 @@ def get_product_options(
     return product_service.get_available_options(db, product_id, current_selection)
 
 @router.post("/products/validate-compatibility")
-def validate_compatibility(selected_options: List[int], db: Session = Depends(get_db)):
+def validate_compatibility(request: dict, db: Session = Depends(get_db)):
     """
     Valida si un conjunto de opciones seleccionadas son compatibles entre sí.
     """
-    is_valid = product_service.validate_compatibility(db, selected_options)
-    return {"is_compatible": is_valid}
+    selected_options = request.get("selected_options", [])
+    print(f"Validando compatibilidad para opciones: {selected_options}")
+    result = product_service.validate_compatibility(db, selected_options)
+    return result
 
 @router.post("/products/calculate-price")
-def calculate_price(selected_options: List[int], db: Session = Depends(get_db)):
+def calculate_price(request: dict, db: Session = Depends(get_db)):
     """
-    Calcula el precio total para una configuración de opciones seleccionadas.
+    Calcula el precio total adicional para una configuración de opciones seleccionadas.
+    Este precio NO incluye el precio base del producto, solo el costo adicional de las opciones.
+    El frontend debe sumar el precio base del producto para obtener el precio total final.
     """
+    selected_options = request.get("selected_options", [])
+    print(f"Calculando precio para opciones: {selected_options}")
+    
     # Primero validar compatibilidad
-    is_valid = product_service.validate_compatibility(db, selected_options)
-    if not is_valid:
-        raise HTTPException(status_code=400, detail="Las opciones seleccionadas no son compatibles")
+    compatibility_result = product_service.validate_compatibility(db, selected_options)
+    if not compatibility_result["is_compatible"]:
+        details = compatibility_result["incompatibility_details"]
+        if details:
+            message = f"Incompatibilidad: "
+            if details["type"] == "excludes":
+                message += f"La opción '{details['option_name']}' no es compatible con '{details['excluded_option_name']}'"
+            elif details["type"] == "requires":
+                message += f"La opción '{details['option_name']}' requiere '{details['required_option_name']}'"
+            raise HTTPException(status_code=400, detail=message)
+        else:
+            raise HTTPException(status_code=400, detail="Las opciones seleccionadas no son compatibles")
     
     total_price = product_service.calculate_price(db, selected_options)
+    print(f"Precio adicional total: {total_price}")
     return {"total_price": total_price} 

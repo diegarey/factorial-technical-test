@@ -5,96 +5,53 @@ import { useParams } from 'next/navigation';
 import Image from 'next/image';
 import CustomizeProduct from '@/components/CustomizeProduct';
 import { Product } from '@/types/product';
+import { ProductsApi } from '@/api/productsApi';
+import Link from 'next/link';
 
 export default function CustomizePage() {
   const params = useParams();
   const productId = params.id;
   
-  // En producción, estos datos vendrían de la API
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [product, setProduct] = useState<Product | null>(null);
 
   useEffect(() => {
-    // Simulamos la carga del producto desde la API
     const fetchProduct = async () => {
       setLoading(true);
       
-      // Datos de ejemplo con precios base según el ID del producto
-      const productPrices = {
-        '1': 599, // Mountain Bike
-        '2': 699, // Bicicleta de Carretera
-        '3': 499, // Bicicleta Urbana
-        '4': 649  // Bicicleta Híbrida
-      };
+      console.log(`Intentando cargar producto con ID: ${productId}, tipo: ${typeof productId}`);
       
-      // Imágenes para cada tipo de bicicleta
-      const productImages = {
-        '1': 'https://images.unsplash.com/photo-1576435728678-68d0fbf94e91?q=80&w=1200', // Mountain Bike
-        '2': 'https://images.unsplash.com/photo-1485965120184-e220f721d03e?q=80&w=1200', // Carretera
-        '3': 'https://images.unsplash.com/photo-1507035895480-2b3156c31fc8?q=80&w=1200', // Urbana
-        '4': 'https://images.unsplash.com/photo-1532298229144-0ec0c57515c7?q=80&w=1200'  // Híbrida
-      };
-      
-      // Nombres para cada tipo de bicicleta
-      const productNames = {
-        '1': 'Bicicleta Mountain Bikea',
-        '2': 'Bicicleta de Carretera',
-        '3': 'Bicicleta Urbana',
-        '4': 'Bicicleta Híbrida'
-      };
-      
-      // Obtener el precio base según el ID o usar un valor predeterminado
-      const basePrice = productPrices[productId as keyof typeof productPrices] || 499;
-      const image = productImages[productId as keyof typeof productImages] || productImages['1'];
-      const name = productNames[productId as keyof typeof productNames] || `Bicicleta Modelo ${productId}`;
-      
-      // Simular una llamada a la API con datos de ejemplo
-      setTimeout(() => {
-        const productData = {
-          id: Number(productId),
-          name: name,
-          category: 'mountain',
-          basePrice: basePrice, // Precio base dinámico según el ID
-          image: image, // Imagen según el tipo de bicicleta
-          partTypes: [
-            {
-              id: 1,
-              name: 'Cuadro',
-              options: [
-                { id: 1, name: 'Cuadro Diamond', base_price: 150, is_compatible: true },
-                { id: 2, name: 'Cuadro Full-suspension', base_price: 250, is_compatible: true }
-              ]
-            },
-            {
-              id: 2,
-              name: 'Acabado',
-              options: [
-                { id: 3, name: 'Mate', base_price: 35, is_compatible: true },
-                { id: 4, name: 'Brillante', base_price: 30, is_compatible: true }
-              ]
-            },
-            {
-              id: 3,
-              name: 'Ruedas',
-              options: [
-                { id: 5, name: 'Ruedas Mountain', base_price: 100, is_compatible: true },
-                { id: 6, name: 'Ruedas Fat Bike', base_price: 120, is_compatible: true }
-              ]
-            },
-            {
-              id: 4,
-              name: 'Color de Aro',
-              options: [
-                { id: 7, name: 'Aro Negro', base_price: 25, is_compatible: true },
-                { id: 8, name: 'Aro Rojo', base_price: 35, is_compatible: true }
-              ]
-            }
-          ]
-        };
+      try {
+        // Intentar convertir el ID a número primero
+        const numericId = Number(productId);
         
-        setProduct(productData);
+        if (isNaN(numericId)) {
+          throw new Error(`ID de producto inválido: ${productId}`);
+        }
+        
+        console.log(`Obteniendo producto ${numericId}`);
+        const data = await ProductsApi.getProduct(numericId);
+        console.log('Datos del producto recibidos:', data);
+        
+        if (data && data.id) {
+          setProduct(data);
+          setError(null);
+        } else {
+          throw new Error('Datos de producto incompletos o inválidos');
+        }
+      } catch (err: any) {
+        console.error('Error al cargar el producto:', err);
+        
+        // Mensaje de error específico para entornos dockerizados
+        if (err.message && err.message.includes('Network Error')) {
+          setError('Error de conexión con el servidor. Verifica que el backend esté funcionando y que la URL sea accesible desde el navegador.');
+        } else {
+          setError(err?.message || 'No se pudo cargar el producto. Por favor, inténtalo de nuevo más tarde.');
+        }
+      } finally {
         setLoading(false);
-      }, 1000);
+      }
     };
 
     fetchProduct();
@@ -104,32 +61,66 @@ export default function CustomizePage() {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+        <span className="ml-3">Cargando detalles del producto...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center p-8 bg-red-50 rounded-lg">
+        <h2 className="text-xl text-red-600 mb-2">Error</h2>
+        <p className="mb-4">{error}</p>
+        <p className="mb-4">No se ha podido cargar la información del producto.</p>
+        
+        <div className="p-4 mb-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <h3 className="font-semibold mb-2">Información técnica:</h3>
+          <p>API URL: {process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}</p>
+          <p>Producto ID: {productId}</p>
+          <p>Entorno: {process.env.NODE_ENV}</p>
+        </div>
+        
+        <div className="flex justify-center">
+          <Link href="/products" className="btn btn-primary">
+            Volver a productos
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (!product) {
+    return (
+      <div className="text-center p-8 bg-yellow-50 rounded-lg">
+        <h2 className="text-xl text-yellow-600 mb-2">Producto no encontrado</h2>
+        <p className="mb-4">No se ha encontrado el producto solicitado.</p>
+        <div className="flex justify-center">
+          <Link href="/products" className="btn btn-primary">
+            Volver a productos
+          </Link>
+        </div>
       </div>
     );
   }
 
   return (
     <div>
-      {product && (
-        <div>
-          <div className="mb-8 relative h-80 rounded-lg overflow-hidden">
-            <Image
-              src={product.image}
-              alt={product.name}
-              fill
-              style={{ objectFit: 'cover' }}
-              priority
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end">
-              <div className="p-6 text-white">
-                <h1 className="text-3xl font-bold">{product.name}</h1>
-                <p className="text-xl mt-2">Personaliza tu bicicleta</p>
-              </div>
-            </div>
+      <div className="mb-8 relative h-80 rounded-lg overflow-hidden">
+        <Image
+          src={product.image}
+          alt={product.name}
+          fill
+          style={{ objectFit: 'cover' }}
+          priority
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end">
+          <div className="p-6 text-white">
+            <h1 className="text-3xl font-bold">{product.name}</h1>
+            <p className="text-xl mt-2">Personaliza tu bicicleta</p>
           </div>
-          <CustomizeProduct product={product} />
         </div>
-      )}
+      </div>
+      <CustomizeProduct product={product} />
     </div>
   );
 } 

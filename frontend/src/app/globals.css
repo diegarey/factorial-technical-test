@@ -4,32 +4,56 @@
 
 :root {
   --foreground-rgb: 0, 0, 0;
-  --background-rgb: 255, 255, 255;
+  --background-rgb: 255, 246, 233; /* Fondo crema similar al de Factorial */
 }
 
 body {
   color: rgb(var(--foreground-rgb));
   background: rgb(var(--background-rgb));
+  font-family: Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
 }
 
 @layer components {
   .btn {
-    @apply inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2;
+    @apply inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-md shadow-factorial focus:outline-none transition duration-150 ease-in-out;
   }
   
   .btn-primary {
-    @apply bg-primary text-white hover:bg-primary-dark focus:ring-primary;
+    @apply bg-primary text-white hover:bg-primary-dark;
   }
   
   .btn-secondary {
-    @apply bg-secondary text-white hover:bg-secondary-dark focus:ring-secondary;
+    @apply bg-white text-secondary border border-gray-300 hover:bg-gray-50;
   }
   
   .btn-outline {
-    @apply bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 focus:ring-primary;
+    @apply bg-white text-gray-700 border border-gray-300 hover:bg-gray-50;
+  }
+  
+  .btn-lg {
+    @apply px-6 py-3 text-base;
   }
   
   .card {
-    @apply bg-white rounded-lg shadow-md overflow-hidden;
+    @apply bg-white rounded-factorial shadow-factorial overflow-hidden;
   }
+  
+  /* Factorial-style heading */
+  .heading-factorial {
+    @apply text-4xl font-bold text-secondary-dark mb-6;
+  }
+  
+  /* Factorial-style section */
+  .section-factorial {
+    @apply py-12 bg-white;
+  }
+  
+  .section-factorial-alt {
+    @apply py-12 bg-factorialGray;
+  }
+}
+
+/* Agregar una transición suave para todos los elementos interactivos */
+a, button {
+  @apply transition-all duration-200;
 } 

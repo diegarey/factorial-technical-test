@@ -20,8 +20,15 @@ def add_to_cart(db: Session, cart_id: int, product_id: int, selected_option_ids:
     Añade un producto configurado al carrito.
     """
     # Validar que las opciones seleccionadas sean compatibles
-    if not validate_compatibility(db, selected_option_ids):
-        raise ValueError("Las opciones seleccionadas no son compatibles")
+    compatibility_result = validate_compatibility(db, selected_option_ids)
+    if not compatibility_result["is_compatible"]:
+        details = compatibility_result["incompatibility_details"]
+        if details and details["type"] == "excludes":
+            raise ValueError(f"La opción '{details['option_name']}' no es compatible con '{details['excluded_option_name']}'")
+        elif details and details["type"] == "requires":
+            raise ValueError(f"La opción '{details['option_name']}' requiere '{details['required_option_name']}'")
+        else:
+            raise ValueError("Las opciones seleccionadas no son compatibles")
     
     # Verificar que todas las opciones estén en stock
     options = db.query(PartOption).filter(PartOption.id.in_(selected_option_ids)).all()

@@ -10,13 +10,20 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# Configurar CORS
+# Configurar CORS con orígenes específicos permitidos
+origins = [
+    "http://localhost:3000",  # Frontend en desarrollo local
+    "http://127.0.0.1:3000",
+    "http://frontend:3000",   # Nombre del servicio dentro de Docker
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # En producción, cambiar a los dominios permitidos
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=origins,
+    allow_credentials=True,  # Importante para permitir cookies
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Accept", "Authorization", "X-Requested-With"],
+    expose_headers=["Set-Cookie"],  # Exponer el encabezado Set-Cookie
 )
 
 # Incluir rutas
