@@ -135,7 +135,9 @@ export const CartApi = {
         quantity: request.quantity
       };
       
-      console.log('Enviando datos al carrito:', requestBody);
+      console.log('---- INICIANDO AÑADIR AL CARRITO ----');
+      console.log('Datos a enviar al carrito:', requestBody);
+      console.log('Estado de las cookies antes de la solicitud:', document.cookie);
       
       // Obtener el ID del carrito de localStorage como respaldo
       const cartIdFromStorage = getCartIdFromLocalStorage();
@@ -145,21 +147,51 @@ export const CartApi = {
       if (cartIdFromStorage) {
         url = `${url}?cart_id=${cartIdFromStorage}`;
         console.log(`Añadiendo ID del carrito como parámetro: ${cartIdFromStorage}`);
+      } else {
+        console.log('No se encontró ID del carrito en localStorage');
       }
       
+      console.log(`Enviando solicitud POST a: ${url}`);
       const response = await apiClient.post(url, requestBody);
       
+      console.log('Respuesta de añadir al carrito:', response.data);
+      console.log('Estado de las cookies después de la solicitud:', document.cookie);
+      
+      // Guardar el ID del carrito si está presente en la respuesta
+      if (response.data && response.data.cart_id) {
+        console.log(`Guardando ID del carrito desde la respuesta: ${response.data.cart_id}`);
+        saveCartIdToLocalStorage(response.data.cart_id);
+      }
+      
+      console.log('---- FINALIZADO AÑADIR AL CARRITO ----');
       return response.data;
-    } catch (error) {
-      console.error('Error en addToCart:', error);
+    } catch (error: any) {
+      console.error('---- ERROR EN AÑADIR AL CARRITO ----');
+      console.error('Error detallado:', error);
+      
+      if (error.response) {
+        console.error('Datos de respuesta de error:', error.response.data);
+        console.error('Estado HTTP:', error.response.status);
+        console.error('Encabezados:', error.response.headers);
+      } else if (error.request) {
+        console.error('No se recibió respuesta a la solicitud');
+        console.error('Detalles de la solicitud:', error.request);
+      } else {
+        console.error('Error durante la configuración de la solicitud:', error.message);
+      }
+      
+      console.error('Estado de las cookies después del error:', document.cookie);
       
       // Simular respuesta en modo desarrollo
       if (process.env.NODE_ENV === 'development') {
         console.log('Simulando respuesta de añadir al carrito en modo desarrollo');
+        const mockItemId = Math.floor(Math.random() * 1000) + 1;
+        console.log(`ID de ítem simulado: ${mockItemId}`);
         return {
-          cart_item_id: Math.floor(Math.random() * 1000) + 1
+          cart_item_id: mockItemId
         };
       }
+      
       throw error;
     }
   },

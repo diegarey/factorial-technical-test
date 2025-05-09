@@ -4,11 +4,15 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { CartApi, Cart, CartItem } from '@/api/cartApi';
 import { TrashIcon } from '@heroicons/react/24/outline';
+import { ProductsApi } from '@/api/productsApi';
+import { Product, PartOption, PartType } from '@/types/product';
 
 export default function CartPage() {
   const [cart, setCart] = useState<Cart | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [productsData, setProductsData] = useState<Record<number, Product>>({});
+  const [optionsData, setOptionsData] = useState<Record<number, {name: string, price: number, partType: string}>>({});
 
   useEffect(() => {
     fetchCart();
@@ -43,6 +47,11 @@ export default function CartPage() {
         }
       }
       
+      // Si hay productos en el carrito, cargar sus detalles
+      if (cartData && cartData.items.length > 0) {
+        await fetchProductsDetails(cartData.items);
+      }
+      
       // Verificar de nuevo las cookies después de recibir el carrito
       console.log('Cookies después de cargar el carrito:', document.cookie);
     } catch (error) {
@@ -50,6 +59,46 @@ export default function CartPage() {
       setError('No se pudo cargar el carrito. Inténtalo de nuevo más tarde.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Función para cargar los detalles de los productos y opciones
+  const fetchProductsDetails = async (items: CartItem[]) => {
+    try {
+      // Obtener IDs únicos de productos
+      const productIds = Array.from(new Set(items.map(item => item.product_id)));
+      
+      // Crear un objeto para almacenar los datos de los productos
+      const productsMap: Record<number, Product> = {};
+      const optionsMap: Record<number, {name: string, price: number, partType: string}> = {};
+      
+      // Cargar detalles de cada producto
+      for (const productId of productIds) {
+        try {
+          const productData = await ProductsApi.getProduct(productId);
+          productsMap[productId] = productData;
+          
+          // Cargar detalles de todas las opciones disponibles para este producto
+          if (productData.partTypes) {
+            productData.partTypes.forEach(partType => {
+              partType.options.forEach(option => {
+                optionsMap[option.id] = {
+                  name: option.name,
+                  price: option.base_price,
+                  partType: partType.name
+                };
+              });
+            });
+          }
+        } catch (err) {
+          console.error(`Error al cargar el producto ${productId}:`, err);
+        }
+      }
+      
+      setProductsData(productsMap);
+      setOptionsData(optionsMap);
+    } catch (error) {
+      console.error('Error al cargar detalles de productos:', error);
     }
   };
 
@@ -92,6 +141,65 @@ export default function CartPage() {
       
       return total + (price * item.quantity);
     }, 0);
+  };
+
+  // Obtener el nombre del producto
+  const getProductName = (productId: number) => {
+    // Si tenemos los datos del producto, usar el nombre real
+    if (productsData[productId]?.name) {
+      return productsData[productId].name;
+    }
+    
+    // Nombres conocidos para bicicletas comunes
+    const knownProductNames: Record<number, string> = {
+      1: 'Mountain Bike Premium'
+    };
+    
+    return knownProductNames[productId] || `Bicicleta ${productId}`;
+  };
+
+  // Agrupar opciones por tipo de parte
+  const getGroupedOptions = (item: CartItem) => {
+    const grouped: Record<string, {name: string, price: number}[]> = {};
+
+    item.options.forEach(option => {
+      const optionData = optionsData[option.part_option_id];
+      if (optionData) {
+        if (!grouped[optionData.partType]) {
+          grouped[optionData.partType] = [];
+        }
+        grouped[optionData.partType].push({
+          name: optionData.name,
+          price: optionData.price
+        });
+      }
+    });
+
+    return grouped;
+  };
+
+  // Calcular el precio base del producto
+  const getBasePrice = (productId: number): number => {
+    // Si tenemos el dato en productsData y es un número válido, usarlo
+    if (productsData[productId] && 
+        typeof productsData[productId].basePrice === 'number' && 
+        !isNaN(productsData[productId].basePrice) && 
+        productsData[productId].basePrice > 0) {
+      return productsData[productId].basePrice;
+    }
+    
+    // Precios base conocidos para productos comunes
+    const knownBasePrices: Record<number, number> = {
+      1: 599 // Mountain Bike Premium
+    };
+    
+    // Si el producto está en la lista de precios conocidos, usar ese precio
+    if (productId in knownBasePrices) {
+      return knownBasePrices[productId];
+    }
+    
+    // Si llegamos aquí, usar un precio base por defecto
+    return 599; // Usar 599 como precio por defecto para cualquier bicicleta
   };
 
   if (loading && !cart) {
@@ -176,60 +284,102 @@ export default function CartPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
-          {cart.items.map((item) => (
-            <div key={item.id} className="border rounded-lg mb-4 p-4">
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h3 className="font-semibold text-lg">Bicicleta personalizada</h3>
-                  <p className="text-gray-600">ID del producto: {item.product_id}</p>
-                </div>
-                <span className="font-bold text-primary">
-                  €{typeof item.price_snapshot === 'number' 
-                      ? item.price_snapshot.toFixed(2) 
-                      : parseFloat(String(item.price_snapshot)).toFixed(2) || '0.00'}
-                </span>
-              </div>
-              
-              <div className="mb-4">
-                <p className="text-sm text-gray-600">
-                  Opciones seleccionadas: {item.options.map(opt => opt.part_option_id).join(', ')}
-                </p>
-              </div>
-              
-              <div className="flex justify-between items-center">
-                <div className="flex items-center">
-                  <button 
-                    onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
-                    className="px-3 py-1 border rounded-l-md bg-gray-100"
-                    disabled={item.quantity <= 1}
-                  >
-                    -
-                  </button>
-                  <span className="px-4 py-1 border-t border-b">
-                    {item.quantity}
+          {cart.items.map((item) => {
+            const productName = getProductName(item.product_id);
+            const groupedOptions = getGroupedOptions(item);
+            const basePrice = getBasePrice(item.product_id);
+            
+            // Calcular el precio total de las opciones sumando el precio de cada opción
+            let calculatedOptionsPrice = 0;
+            item.options.forEach(option => {
+              const optionData = optionsData[option.part_option_id];
+              if (optionData) {
+                calculatedOptionsPrice += optionData.price;
+              }
+            });
+            
+            // Usar el precio calculado si es mayor que 0, o usar la diferencia con el price_snapshot
+            const optionsPrice = calculatedOptionsPrice > 0 
+              ? calculatedOptionsPrice 
+              : (typeof item.price_snapshot === 'number' 
+                ? item.price_snapshot - basePrice 
+                : parseFloat(String(item.price_snapshot)) - basePrice || 0);
+            
+            return (
+              <div key={item.id} className="border rounded-lg mb-4 p-4 shadow-sm">
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <h3 className="font-semibold text-lg">{productName}</h3>
+                    <p className="text-gray-600 text-sm">Ref: #{item.product_id}</p>
+                  </div>
+                  <span className="font-bold text-primary">
+                    €{typeof item.price_snapshot === 'number' 
+                        ? item.price_snapshot.toFixed(2) 
+                        : parseFloat(String(item.price_snapshot)).toFixed(2) || '0.00'}
                   </span>
-                  <button 
-                    onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
-                    className="px-3 py-1 border rounded-r-md bg-gray-100"
-                  >
-                    +
-                  </button>
                 </div>
                 
-                <button 
-                  onClick={() => handleRemoveItem(item.id)}
-                  className="text-red-500 hover:text-red-700"
-                  aria-label="Eliminar producto"
-                >
-                  <TrashIcon className="h-5 w-5" />
-                </button>
+                <div className="mb-4 bg-gray-50 p-3 rounded">
+                  <div className="flex justify-between text-sm font-medium mb-2">
+                    <span>Precio base:</span>
+                    <span>€{basePrice.toFixed(2)}</span>
+                  </div>
+                  
+                  {Object.entries(groupedOptions).map(([partType, options]) => (
+                    <div key={partType} className="mb-3">
+                      <h4 className="text-sm font-medium text-gray-700 mb-1">{partType}:</h4>
+                      {options.map((option, index) => (
+                        <div key={index} className="flex justify-between text-sm pl-3">
+                          <span className="text-gray-600">{option.name}</span>
+                          <span>€{option.price.toFixed(2)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                  
+                  {optionsPrice > 0 && (
+                    <div className="flex justify-between text-sm font-medium mt-2 pt-2 border-t border-gray-200">
+                      <span>Extra por opciones:</span>
+                      <span>€{optionsPrice.toFixed(2)}</span>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center">
+                    <button 
+                      onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
+                      className="px-3 py-1 border rounded-l-md bg-gray-100"
+                      disabled={item.quantity <= 1}
+                    >
+                      -
+                    </button>
+                    <span className="px-4 py-1 border-t border-b">
+                      {item.quantity}
+                    </span>
+                    <button 
+                      onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
+                      className="px-3 py-1 border rounded-r-md bg-gray-100"
+                    >
+                      +
+                    </button>
+                  </div>
+                  
+                  <button 
+                    onClick={() => handleRemoveItem(item.id)}
+                    className="text-red-500 hover:text-red-700"
+                    aria-label="Eliminar producto"
+                  >
+                    <TrashIcon className="h-5 w-5" />
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
         
         <div className="lg:col-span-1">
-          <div className="bg-gray-50 rounded-lg p-6 sticky top-8">
+          <div className="bg-gray-50 rounded-lg p-6 sticky top-8 shadow-sm">
             <h2 className="text-xl font-semibold mb-4">Resumen del pedido</h2>
             
             <div className="space-y-3 mb-6">
@@ -239,7 +389,7 @@ export default function CartPage() {
               </div>
               <div className="flex justify-between">
                 <span>Envío</span>
-                <span>Calculado en el siguiente paso</span>
+                <span className="text-gray-600">Calculado en el siguiente paso</span>
               </div>
             </div>
             
