@@ -2,10 +2,24 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { CartApi, Cart, CartItem } from '@/api/cartApi';
 import { TrashIcon } from '@heroicons/react/24/outline';
 import { ProductsApi } from '@/api/productsApi';
 import { Product, PartOption, PartType } from '@/types/product';
+
+// Estilos personalizados
+const styles = {
+  primary: '#ff3366',
+  primaryDark: '#e61e50',
+  secondary: '#333333',
+  accent: '#00aaff',
+  lightGray: '#f7f9fc',
+  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
+  cardHover: '0 8px 24px rgba(0, 0, 0, 0.12)',
+  itemBackground: 'white',
+  buttonTransition: 'all 0.3s ease'
+};
 
 export default function CartPage() {
   const [cart, setCart] = useState<Cart | null>(null);
@@ -273,17 +287,20 @@ export default function CartPage() {
   }
 
   return (
-    <div>
-      <h1 className="text-3xl font-bold mb-8">Tu carrito</h1>
+    <div className="max-w-6xl mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold mb-8" style={{ color: styles.secondary, borderBottom: `1px solid ${styles.lightGray}`, paddingBottom: '1rem' }}>Tu carrito</h1>
       
       {loading && (
-        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50 backdrop-blur-sm">
+          <div className="bg-white p-6 rounded-xl shadow-xl flex items-center space-x-4" style={{ boxShadow: styles.boxShadow }}>
+            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2" style={{ borderColor: styles.primary }}></div>
+            <p className="text-gray-700 font-medium">Actualizando carrito...</p>
+          </div>
         </div>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2 space-y-6">
           {cart.items.map((item) => {
             const productName = getProductName(item.product_id);
             const groupedOptions = getGroupedOptions(item);
@@ -306,108 +323,198 @@ export default function CartPage() {
                 : parseFloat(String(item.price_snapshot)) - basePrice || 0);
             
             return (
-              <div key={item.id} className="border rounded-lg mb-4 p-4 shadow-sm">
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <h3 className="font-semibold text-lg">{productName}</h3>
-                    <p className="text-gray-600 text-sm">Ref: #{item.product_id}</p>
-                  </div>
-                  <span className="font-bold text-primary">
-                    €{typeof item.price_snapshot === 'number' 
-                        ? item.price_snapshot.toFixed(2) 
-                        : parseFloat(String(item.price_snapshot)).toFixed(2) || '0.00'}
-                  </span>
-                </div>
-                
-                <div className="mb-4 bg-gray-50 p-3 rounded">
-                  <div className="flex justify-between text-sm font-medium mb-2">
-                    <span>Precio base:</span>
-                    <span>€{basePrice.toFixed(2)}</span>
-                  </div>
-                  
-                  {Object.entries(groupedOptions).map(([partType, options]) => (
-                    <div key={partType} className="mb-3">
-                      <h4 className="text-sm font-medium text-gray-700 mb-1">{partType}:</h4>
-                      {options.map((option, index) => (
-                        <div key={index} className="flex justify-between text-sm pl-3">
-                          <span className="text-gray-600">{option.name}</span>
-                          <span>€{option.price.toFixed(2)}</span>
+              <div 
+                key={item.id} 
+                className="bg-white rounded-xl overflow-hidden border border-gray-100"
+                style={{ 
+                  boxShadow: styles.boxShadow, 
+                  transition: 'box-shadow 0.3s ease',
+                  backgroundColor: styles.itemBackground
+                }}
+              >
+                <div className="p-5 space-y-4">
+                  {/* Primera fila: imagen, nombre y precio */}
+                  <div className="flex items-start">
+                    {/* Imagen del producto */}
+                    <div className="relative h-20 w-20 mr-4 overflow-hidden rounded-md flex-shrink-0">
+                      <Image
+                        src={productsData[item.product_id]?.image || 'https://images.unsplash.com/photo-1576435728678-68d0fbf94e91?q=80&w=1200'}
+                        alt={productName}
+                        fill
+                        sizes="80px"
+                        style={{ 
+                          objectFit: 'cover',
+                        }}
+                      />
+                    </div>
+                    
+                    {/* Información del producto */}
+                    <div className="flex-grow">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h3 className="text-xl font-bold mb-1 transition-colors" style={{ color: styles.secondary }}>{productName}</h3>
+                          <p className="text-gray-500 text-sm">Ref: #{item.product_id}</p>
                         </div>
-                      ))}
+                        <span className="font-bold text-xl px-3 py-1 rounded-full" 
+                          style={{ 
+                            color: styles.primary, 
+                            backgroundColor: `${styles.primary}10` 
+                          }}>
+                          €{typeof item.price_snapshot === 'number' 
+                              ? item.price_snapshot.toFixed(2) 
+                              : parseFloat(String(item.price_snapshot)).toFixed(2) || '0.00'}
+                        </span>
+                      </div>
                     </div>
-                  ))}
-                  
-                  {optionsPrice > 0 && (
-                    <div className="flex justify-between text-sm font-medium mt-2 pt-2 border-t border-gray-200">
-                      <span>Extra por opciones:</span>
-                      <span>€{optionsPrice.toFixed(2)}</span>
-                    </div>
-                  )}
-                </div>
-                
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center">
-                    <button 
-                      onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
-                      className="px-3 py-1 border rounded-l-md bg-gray-100"
-                      disabled={item.quantity <= 1}
-                    >
-                      -
-                    </button>
-                    <span className="px-4 py-1 border-t border-b">
-                      {item.quantity}
-                    </span>
-                    <button 
-                      onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
-                      className="px-3 py-1 border rounded-r-md bg-gray-100"
-                    >
-                      +
-                    </button>
                   </div>
                   
-                  <button 
-                    onClick={() => handleRemoveItem(item.id)}
-                    className="text-red-500 hover:text-red-700"
-                    aria-label="Eliminar producto"
-                  >
-                    <TrashIcon className="h-5 w-5" />
-                  </button>
+                  {/* Segunda fila: detalles de precio y opciones */}
+                  <div className="p-4 rounded-lg shadow-inner" style={{ backgroundColor: styles.lightGray }}>
+                    <div className="flex justify-between text-sm font-medium mb-3 pb-2" style={{ borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+                      <span className="text-gray-600">Precio base:</span>
+                      <span className="text-gray-800 font-semibold">€{basePrice.toFixed(2)}</span>
+                    </div>
+                    
+                    {Object.entries(groupedOptions).length > 0 ? (
+                      <div className="space-y-3">
+                        {Object.entries(groupedOptions).map(([partType, options]) => (
+                          <div key={partType} className="mb-2 last:mb-0">
+                            <h4 className="text-sm font-medium text-gray-700 mb-1 flex items-center">
+                              <span className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: styles.primary }}></span>
+                              {partType}:
+                            </h4>
+                            {options.map((option, index) => (
+                              <div key={index} className="flex justify-between text-sm pl-4 py-0.5">
+                                <span className="text-gray-600">{option.name}</span>
+                                <span className="text-gray-800">€{option.price.toFixed(2)}</span>
+                              </div>
+                            ))}
+                          </div>
+                        ))}
+                        
+                        {optionsPrice > 0 && (
+                          <div className="flex justify-between text-sm font-semibold mt-2 pt-2" style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+                            <span className="text-gray-700">Extra por opciones:</span>
+                            <span style={{ color: styles.primary }}>€{optionsPrice.toFixed(2)}</span>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-gray-500 text-sm italic py-1">Sin personalizaciones adicionales</p>
+                    )}
+                  </div>
+                  
+                  {/* Tercera fila: controles de cantidad y botón eliminar */}
+                  <div className="flex justify-between items-center pt-2">
+                    <div className="flex items-center bg-white rounded-lg border border-gray-200 overflow-hidden" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                      <button 
+                        onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
+                        className="px-3 py-1.5 text-gray-600 font-bold hover:bg-gray-50 transition-colors"
+                        disabled={item.quantity <= 1}
+                        style={{ transition: styles.buttonTransition }}
+                      >
+                        −
+                      </button>
+                      <span className="px-4 py-1.5 border-x border-gray-200 font-medium text-gray-800 min-w-[40px] text-center">
+                        {item.quantity}
+                      </span>
+                      <button 
+                        onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
+                        className="px-3 py-1.5 text-gray-600 font-bold hover:bg-gray-50 transition-colors"
+                        style={{ transition: styles.buttonTransition }}
+                      >
+                        +
+                      </button>
+                    </div>
+                    
+                    <button 
+                      onClick={() => handleRemoveItem(item.id)}
+                      className="flex items-center py-1.5 px-3 rounded-lg transition-colors"
+                      style={{ 
+                        color: '#ff3b30', 
+                        transition: styles.buttonTransition 
+                      }}
+                      aria-label="Eliminar producto"
+                    >
+                      <TrashIcon className="h-5 w-5 mr-1" />
+                      <span className="text-sm font-medium">Eliminar</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             );
           })}
+          
+          <div className="flex justify-between mt-8">
+            <Link 
+              href="/products" 
+              className="flex items-center font-medium transition-colors"
+              style={{ color: styles.primary }}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              Continuar comprando
+            </Link>
+          </div>
         </div>
         
         <div className="lg:col-span-1">
-          <div className="bg-gray-50 rounded-lg p-6 sticky top-8 shadow-sm">
-            <h2 className="text-xl font-semibold mb-4">Resumen del pedido</h2>
+          <div className="bg-white rounded-xl p-6 sticky top-8 border border-gray-100" 
+            style={{ boxShadow: styles.boxShadow }}>
+            <h2 className="text-xl font-bold mb-6 pb-3" 
+              style={{ color: styles.secondary, borderBottom: '1px solid #eee' }}>
+              Resumen del pedido
+            </h2>
             
-            <div className="space-y-3 mb-6">
+            <div className="space-y-4 mb-6">
               <div className="flex justify-between">
-                <span>Subtotal</span>
-                <span>€{calculateTotal().toFixed(2)}</span>
+                <span className="text-gray-600">Subtotal</span>
+                <span className="font-medium text-gray-800">€{calculateTotal().toFixed(2)}</span>
               </div>
+              
               <div className="flex justify-between">
-                <span>Envío</span>
-                <span className="text-gray-600">Calculado en el siguiente paso</span>
+                <span className="text-gray-600">Envío</span>
+                <span className="text-gray-500 italic">Calculado en el siguiente paso</span>
+              </div>
+              
+              <div className="flex justify-between pt-3 text-sm text-gray-500">
+                <span>Impuestos</span>
+                <span>Incluidos</span>
               </div>
             </div>
             
             <div className="border-t border-gray-200 pt-4 mb-6">
               <div className="flex justify-between text-lg font-bold">
-                <span>Total</span>
-                <span>€{calculateTotal().toFixed(2)}</span>
+                <span style={{ color: styles.secondary }}>Total</span>
+                <span style={{ color: styles.primary }}>€{calculateTotal().toFixed(2)}</span>
               </div>
+              <p className="text-xs text-gray-500 mt-1 text-right">Impuestos incluidos</p>
             </div>
             
-            <button className="btn btn-primary w-full py-3">
-              Proceder al pago
+            <button
+              className="w-full py-3.5 text-white font-bold rounded-lg shadow-lg transition-all duration-200 flex items-center justify-center"
+              style={{
+                backgroundColor: styles.primary,
+                boxShadow: `0 4px 12px ${styles.primary}40`,
+                transition: styles.buttonTransition
+              }}
+              onMouseOver={(e) => e.currentTarget.style.backgroundColor = styles.primaryDark}
+              onMouseOut={(e) => e.currentTarget.style.backgroundColor = styles.primary}
+            >
+              <span>Proceder al pago</span>
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+              </svg>
             </button>
             
-            <div className="mt-4">
-              <Link href="/products" className="text-primary hover:underline text-sm">
-                ← Continuar comprando
-              </Link>
+            <div className="mt-6 p-3 rounded-lg" style={{ backgroundColor: styles.lightGray }}>
+              <div className="flex items-center justify-center space-x-3">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+                <p className="text-xs text-gray-500">Pago 100% seguro. Tus datos están protegidos.</p>
+              </div>
             </div>
           </div>
         </div>
