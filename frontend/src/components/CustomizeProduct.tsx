@@ -56,6 +56,27 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
 
   // Cargar opciones disponibles cuando cambia la selección
   useEffect(() => {
+    // Detectar específicamente si "Aro Rojo" está entre las opciones seleccionadas
+    const selectedOptionIds = Object.values(selectedOptions);
+    const hasAroRojo = (() => {
+      for (const partType of partTypesToRender) {
+        if (partType.name === "Color de Aro") {
+          const selectedOptionId = selectedOptions[partType.id];
+          const option = partType.options.find(opt => opt.id === selectedOptionId);
+          return option && option.name === "Aro Rojo";
+        }
+      }
+      return false;
+    })();
+
+    if (hasAroRojo) {
+      console.log("********** ARO ROJO ESTÁ SELECCIONADO EN EL USEEFFECT **********");
+      console.log("Precio base:", product.basePrice);
+      console.log("Precio total actual:", totalPrice);
+      console.log("Todas las opciones seleccionadas:", selectedOptions);
+      console.log("IDs de opciones seleccionadas:", selectedOptionIds);
+    }
+
     const loadOptions = async () => {
       setLoading(true);
       setError(null);
@@ -76,15 +97,18 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
           setError('Las opciones recibidas tienen un formato inesperado.');
         }
         
+        // Asegurar que el precio base sea un número válido (hacerlo fuera del if para no repetir código)
+        const basePrice = typeof product.basePrice === 'number' && !isNaN(product.basePrice) && product.basePrice > 0
+          ? product.basePrice 
+          : (product.id === 1 ? 599 : 0); // Fallback para Mountain Bike Premium
+        
+        console.log(`Usando precio base: ${basePrice} para el cálculo`);
+        
         // Calcular precio total - incluir siempre el precio base
         if (selectedOptionIds.length > 0) {
           try {
             const price = await ProductsApi.calculatePrice(selectedOptionIds);
-            
-            // Asegurar que el precio base sea un número válido
-            const basePrice = typeof product.basePrice === 'number' && !isNaN(product.basePrice) && product.basePrice > 0
-              ? product.basePrice 
-              : (product.id === 1 ? 599 : 0); // Fallback para Mountain Bike Premium
+            console.log(`Precio de opciones recibido de la API: ${price}`);
             
             // Solo actualizar el precio si es un número válido
             if (typeof price === 'number' && !isNaN(price)) {
@@ -94,33 +118,32 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
               // Asegurar que el precio no sea inferior al precio base
               const finalPrice = newTotalPrice < basePrice ? basePrice : newTotalPrice;
               
+              console.log(`Precio calculado final: Precio base (${basePrice}) + Precio opciones (${price}) = ${finalPrice}`);
               setTotalPrice(finalPrice);
-              console.log(`Precio calculado: ${price}, precio base: ${basePrice}, total: ${finalPrice}`);
             } else {
               // Si el precio no es válido, usar al menos el precio base
-              setTotalPrice(basePrice);
               console.warn(`Precio calculado inválido: ${price}, usando precio base: ${basePrice}`);
+              setTotalPrice(basePrice);
             }
           } catch (priceError) {
             console.error('Error al calcular precio:', priceError);
             // En caso de error, mantener al menos el precio base
-            const basePrice = typeof product.basePrice === 'number' && !isNaN(product.basePrice) && product.basePrice > 0
-              ? product.basePrice 
-              : (product.id === 1 ? 599 : 0);
             setTotalPrice(basePrice);
           }
         } else {
           // Si no hay opciones seleccionadas, usar solo el precio base
-          const basePrice = typeof product.basePrice === 'number' && !isNaN(product.basePrice) && product.basePrice > 0
-            ? product.basePrice 
-            : (product.id === 1 ? 599 : 0); // Fallback para Mountain Bike Premium
-          
+          console.log(`No hay opciones seleccionadas, usando solo precio base: ${basePrice}`);
           setTotalPrice(basePrice);
-          console.log(`Precio base configurado: ${basePrice}`);
         }
       } catch (error) {
         console.error('Error al cargar opciones:', error);
         setError('No se pudieron cargar las opciones. Por favor, recarga la página.');
+        
+        // Asegurarse de que al menos el precio base esté configurado en caso de error
+        const basePrice = typeof product.basePrice === 'number' && !isNaN(product.basePrice) && product.basePrice > 0
+          ? product.basePrice 
+          : (product.id === 1 ? 599 : 0);
+        setTotalPrice(basePrice);
       } finally {
         setLoading(false);
       }
@@ -130,10 +153,46 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
   }, [selectedOptions, product]);
 
   const handleOptionSelect = (partTypeId: number, optionId: number) => {
-    setSelectedOptions(prev => ({
-      ...prev,
-      [partTypeId]: optionId,
-    }));
+    console.log(`Seleccionando opción: partTypeId=${partTypeId}, optionId=${optionId}`);
+    
+    // Obtener la opción seleccionada para obtener su precio
+    let selectedOption = null;
+    const partType = partTypesToRender.find(pt => pt.id === partTypeId);
+    if (partType && partType.options) {
+      selectedOption = partType.options.find(opt => opt.id === optionId);
+    }
+
+    // Detección especial para Aro Rojo
+    if (selectedOption && selectedOption.name === "Aro Rojo") {
+      console.log("********** SELECCIÓN DE ARO ROJO DETECTADA **********");
+      console.log("Precio base actual:", product.basePrice);
+      console.log("Precio total actual:", totalPrice);
+      console.log("Opciones seleccionadas antes de Aro Rojo:", selectedOptions);
+    }
+    
+    // Capturar las selecciones actuales para hacer logging después
+    const prevSelections = {...selectedOptions};
+    
+    // Actualizar las opciones seleccionadas
+    setSelectedOptions(prev => {
+      const newSelection = {
+        ...prev,
+        [partTypeId]: optionId,
+      };
+      console.log('Nueva selección:', newSelection);
+
+      // Para detectar específicamente si estamos seleccionando Aro Rojo
+      if (selectedOption && selectedOption.name === "Aro Rojo") {
+        console.log("IDs de opciones después de seleccionar Aro Rojo:", Object.values(newSelection));
+      }
+      return newSelection;
+    });
+    
+    // No recalculamos el precio aquí porque el useEffect se encargará de ello
+    // Solo registramos la información para depuración
+    if (selectedOption) {
+      console.log(`Opción seleccionada: ${selectedOption.name}, precio: ${selectedOption.base_price}`);
+    }
   };
 
   const handleAddToCart = async () => {
@@ -399,18 +458,35 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
                   <span>Total</span>
                   <span className="text-primary">
                     €{(() => {
-                      // Asegurar que mostramos al menos el precio base
-                      let displayPrice = totalPrice;
+                      // Calcular el precio total sumando el precio base y el precio de todas las opciones seleccionadas
+                      // Esto es un cálculo en tiempo real independiente del estado totalPrice
                       
-                      // Si el total es 0 o menor, mostrar al menos el precio base
-                      if (displayPrice <= 0) {
-                        const basePrice = typeof product.basePrice === 'number' && !isNaN(product.basePrice) && product.basePrice > 0
-                          ? product.basePrice
-                          : (product.id === 1 ? 599 : 0);
-                        displayPrice = basePrice;
+                      // Obtener el precio base
+                      const basePrice = typeof product.basePrice === 'number' && !isNaN(product.basePrice) && product.basePrice > 0
+                        ? product.basePrice
+                        : (product.id === 1 ? 599 : 0);
+                      
+                      // Calcular el precio total de las opciones seleccionadas
+                      let optionsPrice = 0;
+                      for (const partType of partTypesToRender) {
+                        const selectedOptionId = selectedOptions[partType.id];
+                        if (selectedOptionId) {
+                          const option = partType.options.find(opt => opt.id === selectedOptionId);
+                          if (option && typeof option.base_price === 'number') {
+                            optionsPrice += option.base_price;
+                          }
+                        }
                       }
                       
-                      return displayPrice.toFixed(2);
+                      // Crear el precio total
+                      const calculatedTotal = basePrice + optionsPrice;
+                      
+                      console.log(`Cálculo de precio en render: Base: ${basePrice}, Opciones: ${optionsPrice}, Total: ${calculatedTotal}`);
+                      
+                      // Usar el precio calculado o el estado totalPrice, el que sea mayor
+                      const finalPrice = Math.max(calculatedTotal, totalPrice);
+                      
+                      return finalPrice.toFixed(2);
                     })()}
                   </span>
                 </div>

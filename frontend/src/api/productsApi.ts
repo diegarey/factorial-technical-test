@@ -176,22 +176,43 @@ export const ProductsApi = {
       
       console.log(`Calculando precio para opciones: ${selectedOptions.join(', ')}`);
       
-      const response = await apiClient.post('/api/products/calculate-price', {
+      // Imprimir el cuerpo completo de la solicitud para depuración
+      const requestBody = {
         selected_options: selectedOptions
-      });
+      };
+      console.log('Enviando solicitud de cálculo de precio:', requestBody);
       
-      console.log('Respuesta de cálculo de precio:', response.data);
+      const response = await apiClient.post('/api/products/calculate-price', requestBody);
+      
+      console.log('Respuesta completa de cálculo de precio:', response);
+      console.log('Datos de respuesta de cálculo de precio:', response.data);
       
       // Validar que la respuesta tenga un total_price válido
       if (response.data && typeof response.data.total_price === 'number') {
-        return response.data.total_price;
+        const price = response.data.total_price;
+        console.log(`Precio calculado recibido del servidor: ${price}`);
+        return price;
       } else {
-        console.error('Formato de respuesta inválido en calculate-price:', response.data);
+        console.error('Formato de respuesta inválido en calculate-price, datos:', response.data);
+        if (response.data) {
+          console.log('Tipo de total_price:', typeof response.data.total_price);
+          console.log('Valor de total_price:', response.data.total_price);
+        }
+        console.log('Retornando 0 como precio por defecto debido a formato inválido');
         return 0;
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al calcular precio:', error);
-      // Si falla, devolver un precio por defecto
+      // Imprimir más detalles sobre el error
+      if (error.response) {
+        console.error('Datos del error:', error.response.data);
+        console.error('Estado del error:', error.response.status);
+      } else if (error.request) {
+        console.error('Error en la solicitud sin respuesta');
+      } else {
+        console.error('Error de configuración:', error.message);
+      }
+      console.log('Retornando 0 como precio por defecto debido a error');
       return 0;
     }
   }
