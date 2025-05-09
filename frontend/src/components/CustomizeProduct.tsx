@@ -323,7 +323,6 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
       <div className="mb-8 border-b border-gray-200 pb-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between">
           <div>
-            <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">{product.name}</h1>
             <p className="mt-2 text-lg text-gray-600">
               {isProductPersonalizable 
                 ? 'Personaliza tu bicicleta seleccionando las opciones a continuación'
@@ -370,7 +369,6 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
         <div className="text-center p-8 bg-white rounded-lg border border-gray-200 shadow-sm mb-6">
           <div className="mb-6 max-w-3xl mx-auto">
             <div className="text-left">
-              <h2 className="text-2xl font-bold text-secondary mb-3">{product.name}</h2>
               <p className="text-gray-600 mb-6">{product.description || 'Bicicleta de alta calidad con configuración estándar.'}</p>
               
               <div className="mb-8 p-5 bg-gray-50 rounded-lg border border-gray-100">
