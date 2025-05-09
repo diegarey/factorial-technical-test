@@ -4,6 +4,7 @@ import { Product, PartType, AvailablePartType } from '@/types/product';
 import { ProductsApi } from '@/api/productsApi';
 import { CartApi } from '@/api/cartApi';
 import Link from 'next/link';
+import Image from 'next/image';
 
 interface CustomizeProductProps {
   product: Product;
@@ -331,61 +332,62 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
       )}
 
       {!isProductPersonalizable ? (
-        <div className="text-center p-8 bg-yellow-50 rounded-lg mb-6">
-          <h3 className="text-lg font-semibold text-yellow-700 mb-3">No hay opciones de personalización</h3>
-          <p className="text-gray-600 mb-4">
-            Este modelo de bicicleta no tiene opciones de personalización disponibles.
-            Puedes añadirlo directamente al carrito con su configuración estándar o explorar otros modelos.
-          </p>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto mb-4">
-            <div className="p-4 border rounded-lg bg-white">
-              <h4 className="font-semibold text-secondary mb-2">Características del producto</h4>
-              <ul className="list-disc pl-5 text-left">
-                <li>Categoría: {product.category}</li>
-                <li>Precio base: €{product.basePrice ? product.basePrice.toFixed(2) : '0.00'}</li>
-                {product.description && <li>Descripción: {product.description}</li>}
-              </ul>
-            </div>
-            
-            <div className="p-4 border rounded-lg bg-white">
-              <h4 className="font-semibold text-secondary mb-2">¿Qué hacer ahora?</h4>
-              <ul className="list-disc pl-5 text-left">
-                <li>Añadir al carrito con la configuración estándar</li>
-                <li>Explorar otros modelos personalizables</li>
-                <li>Contactar con atención al cliente para más información</li>
-              </ul>
+        <div className="text-center p-8 bg-white rounded-lg border border-gray-200 shadow-sm mb-6">
+          <div className="mb-6 max-w-3xl mx-auto">
+            <div className="text-left">
+              <h2 className="text-2xl font-bold text-secondary mb-3">{product.name}</h2>
+              <p className="text-gray-600 mb-6">{product.description || 'Bicicleta de alta calidad con configuración estándar.'}</p>
+              
+              <div className="mb-8 p-5 bg-gray-50 rounded-lg border border-gray-100">
+                <h3 className="font-semibold text-secondary mb-3">Características del producto</h3>
+                <ul className="list-disc pl-5 text-gray-600 space-y-2">
+                  <li>Categoría: <span className="font-medium">{product.category}</span></li>
+                  <li>Precio: <span className="font-medium text-primary text-lg">€{product.basePrice ? product.basePrice.toFixed(2) : '0.00'}</span></li>
+                  {product.description && <li>Descripción completa: <span className="font-medium">{product.description}</span></li>}
+                </ul>
+              </div>
+              
+              <div className="p-5 border rounded-lg bg-gray-50 mb-8">
+                <h4 className="font-semibold text-secondary mb-2">Información adicional</h4>
+                <p className="text-gray-600">
+                  Este modelo cuenta con una configuración estándar de alta calidad. 
+                  No requiere personalización adicional y está listo para ser utilizado inmediatamente.
+                </p>
+              </div>
+              
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <button 
+                  className="btn btn-primary flex-1 py-3"
+                  onClick={() => {
+                    CartApi.addToCart({
+                      product_id: product.id,
+                      selected_options: [],
+                      quantity: 1
+                    }).then(() => {
+                      alert('Producto añadido al carrito');
+                      router.push('/cart');
+                    }).catch(err => {
+                      console.error('Error al añadir al carrito:', err);
+                      alert('Ocurrió un error al añadir el producto al carrito');
+                    });
+                  }}
+                >
+                  Añadir al carrito
+                </button>
+                <Link href="/products" className="btn btn-outline flex-1 py-3">
+                  Ver otros modelos
+                </Link>
+              </div>
             </div>
           </div>
           
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button 
-              className="btn btn-primary"
-              onClick={() => {
-                CartApi.addToCart({
-                  product_id: product.id,
-                  selected_options: [],
-                  quantity: 1
-                }).then(() => {
-                  alert('Producto añadido al carrito');
-                  router.push('/cart');
-                }).catch(err => {
-                  console.error('Error al añadir al carrito:', err);
-                  alert('Ocurrió un error al añadir el producto al carrito');
-                });
-              }}
-            >
-              Añadir al carrito
-            </button>
-            <Link href="/products" className="btn btn-outline">
-              Ver otros modelos
-            </Link>
-          </div>
-          
-          <div className="mt-6 text-xs text-gray-500">
-            <p>
-              Información técnica: ID: {product.id}, Categoría: {product.category}
-            </p>
+          <div className="mt-8 text-xs text-gray-400 border-t border-gray-100 pt-4">
+            <details>
+              <summary className="cursor-pointer hover:text-gray-500">Información técnica (solo para desarrolladores)</summary>
+              <p className="mt-2">
+                ID: {product.id}, Categoría: {product.category}
+              </p>
+            </details>
           </div>
         </div>
       ) : (
