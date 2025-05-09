@@ -2,6 +2,7 @@ import './globals.css'
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import Header from '@/components/Header'
+import ClientLayout from '@/components/ClientLayout'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -22,11 +23,11 @@ export default function RootLayout({
       </head>
       <body className={inter.className} suppressHydrationWarning>
         <Header />
-        <main className="container mx-auto py-8 px-4">
+        <ClientLayout>
           {children}
-        </main>
+        </ClientLayout>
         <footer className="bg-gray-100 py-6">
-          <div className="container mx-auto px-4 text-center text-gray-600">
+          <div className="max-w-screen-2xl mx-auto px-4 text-center text-gray-600">
             &copy; {new Date().getFullYear()} Marcus Bikes. Todos los derechos reservados.
           </div>
         </footer>
