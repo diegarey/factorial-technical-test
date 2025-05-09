@@ -196,72 +196,102 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
   };
 
   const handleAddToCart = async () => {
-    // Verificar que se haya seleccionado una opción para cada tipo de parte
-    const partTypesToCheck = availableOptions.length > 0 ? availableOptions : product.partTypes || [];
-    
-    const allPartsSelected = partTypesToCheck.every(partType => 
-      selectedOptions[partType.id] !== undefined
-    );
-
-    if (!allPartsSelected) {
-      alert('Por favor selecciona una opción para cada tipo de parte');
-      return;
-    }
-
     try {
       setLoading(true);
+      console.log("=== INICIANDO PROCESO DE AÑADIR AL CARRITO (SIMPLIFICADO) ===");
       
-      // Obtener la lista de opciones seleccionadas
+      // 1. Preparar los datos en un formato simple
+      const productId = product.id;
       const selectedOptionIds = Object.values(selectedOptions);
       
-      console.log('Opciones seleccionadas:', selectedOptionIds);
-      console.log('Objeto de selecciones completo:', selectedOptions);
+      console.log(`Producto ID: ${productId}`);
+      console.log(`Opciones seleccionadas: ${selectedOptionIds.join(", ")}`);
+      console.log(`Cantidad: 1`);
       
-      // Mostrar nombres de las opciones seleccionadas para depuración
-      const selectedPartTypes = availableOptions.length > 0 ? availableOptions : product.partTypes || [];
-      const selectedOptionsDetails = selectedPartTypes.map(partType => {
-        const selectedOptionId = selectedOptions[partType.id];
-        const option = partType.options.find(opt => opt.id === selectedOptionId);
-        return {
-          partType: partType.name,
-          optionId: selectedOptionId,
-          optionName: option ? option.name : 'No seleccionado'
-        };
-      });
-      console.log('Detalles de opciones seleccionadas:', selectedOptionsDetails);
-      
-      // Validar compatibilidad de opciones antes de añadir al carrito
+      // 1.5 Primero validar compatibilidad antes de enviar al carrito
+      console.log("Validando compatibilidad de opciones...");
       const compatibilityResult = await ProductsApi.validateCompatibility(selectedOptionIds);
-      console.log('Resultado de compatibilidad:', compatibilityResult);
       
       if (!compatibilityResult.is_compatible) {
-        let errorMessage = 'Las opciones seleccionadas no son compatibles entre sí. Por favor revisa tu selección.';
+        // Extraer detalles de incompatibilidad
+        let errorMessage = 'Las opciones seleccionadas no son compatibles entre sí.';
         if (compatibilityResult.incompatibility_details) {
           const details = compatibilityResult.incompatibility_details;
           if (details.type === 'excludes') {
-            errorMessage = `La opción "${details.option_name}" no es compatible con "${details.excluded_option_name}". Por favor selecciona otra combinación.`;
+            errorMessage = `La opción "${details.option_name}" no es compatible con "${details.excluded_option_name}".`;
           } else if (details.type === 'requires') {
-            errorMessage = `La opción "${details.option_name}" requiere seleccionar "${details.required_option_name}". Por favor ajusta tu selección.`;
+            errorMessage = `La opción "${details.option_name}" requiere seleccionar "${details.required_option_name}".`;
           }
         }
-        alert(errorMessage);
+        // Mostrar mensaje de error
+        console.error('Error de compatibilidad:', errorMessage);
+        alert(`No se puede añadir al carrito: ${errorMessage} Por favor, elige otra combinación.`);
         setLoading(false);
         return;
       }
       
-      // Si las opciones son compatibles, añadir al carrito
-      const response = await CartApi.addToCart({
-        product_id: product.id,
+      // 2. Llamada directa a la API - ahora con validación previa
+      const url = '/api/cart/items';
+      const requestData = {
+        product_id: productId,
         selected_options: selectedOptionIds,
         quantity: 1
+      };
+      
+      console.log("Realizando solicitud directa al servidor...");
+      console.log("URL:", url);
+      console.log("Datos:", JSON.stringify(requestData));
+      
+      // Utilizar fetch directamente en lugar de la API para depurar mejor
+      const response = await fetch(`http://localhost:8000${url}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        credentials: 'include', // Incluir cookies
+        body: JSON.stringify(requestData)
       });
       
-      // Si todo salió bien, redirigir al carrito
-      alert('Producto añadido al carrito');
+      console.log(`Respuesta HTTP: ${response.status} ${response.statusText}`);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Error en la respuesta: ${errorText}`);
+        
+        // Intentar extraer mensaje de error más amigable
+        let userMessage = 'Error al añadir el producto al carrito.';
+        try {
+          const errorJson = JSON.parse(errorText);
+          if (errorJson && errorJson.detail) {
+            userMessage = errorJson.detail;
+            // Simplificar mensajes de incompatibilidad que vienen del backend
+            if (userMessage.includes('Incompatibilidad:')) {
+              userMessage = userMessage.replace('Incompatibilidad: ', '');
+            }
+          }
+        } catch (e) {
+          // Si no es JSON, usar el texto completo
+          if (errorText && errorText.length < 100) {
+            userMessage = errorText;
+          }
+        }
+        
+        alert(`No se pudo añadir al carrito: ${userMessage}`);
+        throw new Error(`Error al añadir al carrito: ${response.status} ${response.statusText}`);
+      }
+      
+      const responseData = await response.json();
+      console.log("Datos de respuesta:", responseData);
+      
+      // 3. Mostrar mensaje y redirigir
+      alert('¡Producto añadido al carrito!');
+      console.log("Redirigiendo al carrito...");
       router.push('/cart');
+      
     } catch (error) {
-      console.error('Error al añadir al carrito:', error);
-      alert('Ocurrió un error al añadir el producto al carrito');
+      console.error("ERROR AL AÑADIR AL CARRITO:", error);
+      setLoading(false);
     } finally {
       setLoading(false);
     }
@@ -366,35 +396,54 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
                 <h2 className="text-xl font-semibold mb-4">{partType.name}</h2>
                 {partType.options && partType.options.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {partType.options.map((option) => (
-                      <div 
-                        key={option.id}
-                        className={`
-                          border rounded-lg p-4 cursor-pointer transition-colors
-                          ${selectedOptions[partType.id] === option.id 
-                            ? 'border-primary bg-primary bg-opacity-5' 
-                            : 'border-gray-200 hover:border-primary'}
-                          ${!option.is_compatible ? 'opacity-50 cursor-not-allowed' : ''}
-                        `}
-                        onClick={() => {
-                          if (option.is_compatible !== false) {
-                            handleOptionSelect(partType.id, option.id);
-                          }
-                        }}
-                      >
-                        <div className="flex justify-between mb-2">
-                          <span className="font-medium">{option.name}</span>
-                          <span className="text-primary font-semibold">
-                            €{option.base_price ? option.base_price.toFixed(2) : '0.00'}
-                          </span>
+                    {partType.options.map((option) => {
+                      // Verificar si esta opción específica es incompatible con alguna de las ya seleccionadas
+                      const isIncompatible = option.is_compatible === false;
+                      
+                      // Determinar si esta opción está seleccionada
+                      const isSelected = selectedOptions[partType.id] === option.id;
+                      
+                      // Determinar texto de incompatibilidad
+                      let incompatibilityText = 'No compatible con la selección actual';
+                      
+                      return (
+                        <div 
+                          key={option.id}
+                          className={`
+                            border rounded-lg p-4 transition-colors
+                            ${isSelected 
+                              ? 'border-primary bg-primary bg-opacity-5' 
+                              : 'border-gray-200 hover:border-primary'}
+                            ${isIncompatible ? 'opacity-50 cursor-not-allowed bg-gray-50' : 'cursor-pointer'}
+                          `}
+                          onClick={() => {
+                            if (!isIncompatible) {
+                              handleOptionSelect(partType.id, option.id);
+                            } else {
+                              // Mostrar mensaje sobre la incompatibilidad
+                              alert(`La opción "${option.name}" no es compatible con tu selección actual.`);
+                            }
+                          }}
+                        >
+                          <div className="flex justify-between mb-2">
+                            <span className="font-medium">{option.name}</span>
+                            <span className="text-primary font-semibold">
+                              €{option.base_price ? option.base_price.toFixed(2) : '0.00'}
+                            </span>
+                          </div>
+                          {isIncompatible && (
+                            <p className="text-red-500 text-sm">
+                              {incompatibilityText}
+                            </p>
+                          )}
+                          {isSelected && (
+                            <p className="text-green-600 text-sm font-medium">
+                              ✓ Seleccionado
+                            </p>
+                          )}
                         </div>
-                        {option.is_compatible === false && (
-                          <p className="text-red-500 text-sm">
-                            No compatible con la selección actual
-                          </p>
-                        )}
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 ) : (
                   <p className="text-gray-500">No hay opciones disponibles para este tipo de componente.</p>
@@ -431,21 +480,23 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
                   const selectedOptionId = selectedOptions[partType.id];
                   let selectedOptionName = 'No seleccionado';
                   let selectedOptionPrice = 0;
+                  let isCompatible = true;
                   
                   if (selectedOptionId) {
                     const option = partType.options.find(opt => opt.id === selectedOptionId);
                     if (option) {
                       selectedOptionName = option.name;
                       selectedOptionPrice = option.base_price;
+                      isCompatible = option.is_compatible !== false;
                     }
                   }
                   
                   return (
                     <div key={partType.id} className="flex justify-between">
                       <span className="text-gray-600">{partType.name}</span>
-                      <span className="font-medium">
+                      <span className={`font-medium ${!isCompatible ? 'text-red-500' : ''}`}>
                         {selectedOptionId 
-                          ? `${selectedOptionName} (€${selectedOptionPrice ? selectedOptionPrice.toFixed(2) : '0.00'})`
+                          ? `${selectedOptionName} (€${selectedOptionPrice ? selectedOptionPrice.toFixed(2) : '0.00'})${!isCompatible ? ' ⚠️' : ''}`
                           : 'No seleccionado'}
                       </span>
                     </div>
@@ -495,7 +546,10 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
               <button 
                 className="btn btn-primary w-full py-3"
                 onClick={handleAddToCart}
-                disabled={loading || partTypesToRender.length === 0}
+                disabled={loading || 
+                  // Verificar que se haya seleccionado una opción para cada tipo de parte
+                  !partTypesToRender.every(partType => selectedOptions[partType.id] !== undefined)
+                }
               >
                 {loading ? 'Procesando...' : 'Añadir al carrito'}
               </button>
