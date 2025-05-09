@@ -52,18 +52,12 @@ export default function Home() {
           />
           <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/70 to-transparent"></div>
           
-          {/* Partículas decorativas */}
-          <div className="absolute inset-0 opacity-30">
-            <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-white rounded-full animate-pulse"></div>
-            <div className="absolute top-1/3 left-1/2 w-2 h-2 bg-white rounded-full animate-pulse delay-75"></div>
-            <div className="absolute top-2/3 left-1/3 w-2 h-2 bg-white rounded-full animate-pulse delay-150"></div>
-            <div className="absolute top-1/2 left-3/4 w-2 h-2 bg-white rounded-full animate-pulse delay-300"></div>
-          </div>
+
         </div>
         
         <div className="container mx-auto px-6 relative z-10">
           <div className="max-w-2xl animate-fade-in-up">
-            <span className="inline-block px-4 py-2 mb-6 text-sm font-medium bg-primary/20 text-white rounded-full backdrop-blur-sm border border-primary/30 animate-pulse shadow-lg shadow-primary/20">
+            <span className="inline-block px-4 py-2 mb-6 text-sm font-medium bg-primary/20 text-white rounded-full backdrop-blur-sm border border-primary/30 shadow-lg shadow-primary/20">
               Diseño exclusivo y personalizado
             </span>
             <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold text-white mb-8 leading-tight">
