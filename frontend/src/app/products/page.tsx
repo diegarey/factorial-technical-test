@@ -98,7 +98,7 @@ export default function ProductsPage() {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="spinner"></div>
-        <span className="ml-2">Cargando bicicletas...</span>
+        <span className="ml-2">Cargando productos...</span>
       </div>
     );
   }
@@ -115,14 +115,14 @@ export default function ProductsPage() {
   return (
     <div>
       <header className="mb-8">
-        <h1 className="text-3xl font-bold text-secondary mb-2">Nuestras Bicicletas</h1>
+        <h1 className="text-3xl font-bold text-secondary mb-2">Nuestros productos</h1>
         <p className="text-secondary-light">
           Selecciona un modelo para comenzar tu personalización
         </p>
       </header>
 
       {products.length === 0 ? (
-        <p className="text-center text-secondary-light">No hay bicicletas disponibles en este momento.</p>
+        <p className="text-center text-secondary-light">No hay productos disponibles en este momento.</p>
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
