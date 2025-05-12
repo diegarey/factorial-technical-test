@@ -1,5 +1,6 @@
 import apiClient from './client';
 import { Product, AvailablePartType } from '../types/product';
+import { getApiUrl } from '../config/api';
 
 // Función de transformación para adaptar los datos del backend al formato del frontend
 const transformProductData = (data: any): Product => {
@@ -47,7 +48,7 @@ export const ProductsApi = {
   getProducts: async (page: number = 1, pageSize: number = 9): Promise<{products: Product[], total: number}> => {
     const skip = (page - 1) * pageSize;
     console.log(`Solicitando productos página ${page}, tamaño ${pageSize}, skip=${skip}`);
-    const response = await apiClient.get('/api/products/', {
+    const response = await apiClient.get(getApiUrl('products/'), {
       params: { skip, limit: pageSize }
     });
     
@@ -63,7 +64,7 @@ export const ProductsApi = {
    */
   getFeaturedProducts: async (limit: number = 3): Promise<Product[]> => {
     console.log(`Solicitando productos destacados, límite=${limit}`);
-    const response = await apiClient.get('/api/products/featured', {
+    const response = await apiClient.get(getApiUrl('products/featured'), {
       params: { limit }
     });
     return response.data.map(transformProductData);
@@ -75,7 +76,7 @@ export const ProductsApi = {
   getProduct: async (productId: number): Promise<Product> => {
     console.log(`Solicitando detalles del producto ${productId}`);
     try {
-      const response = await apiClient.get(`/api/products/${productId}`);
+      const response = await apiClient.get(getApiUrl(`products/${productId}`));
       const transformedProduct = transformProductData(response.data);
       console.log('Producto transformado:', transformedProduct);
       return transformedProduct;
@@ -108,7 +109,7 @@ export const ProductsApi = {
       // Esto es un fallback en caso de que el endpoint de detalle del producto falle
       try {
         console.log(`Intentando obtener opciones para el producto ${productId}`);
-        const optionsResponse = await apiClient.get(`/api/products/${productId}/options`);
+        const optionsResponse = await apiClient.get(getApiUrl(`products/${productId}/options`));
         
         // Usar nombre conocido si está disponible, de lo contrario usar nombre genérico
         const productName = knownProductNames[productId] || `Bicicleta ${productId}`;
@@ -149,7 +150,7 @@ export const ProductsApi = {
       
       console.log(`Solicitando opciones para producto ${productId} con selección:`, selectedOptions);
       
-      const response = await apiClient.get(`/api/products/${productId}/options`, { params });
+      const response = await apiClient.get(getApiUrl(`products/${productId}/options`), { params });
       
       console.log('Opciones recibidas:', response.data);
       
@@ -180,7 +181,7 @@ export const ProductsApi = {
       
       console.log('Enviando datos de validación:', requestBody);
       
-      const response = await apiClient.post('/api/products/validate-compatibility', requestBody);
+      const response = await apiClient.post(getApiUrl('products/validate-compatibility'), requestBody);
       console.log('Respuesta de compatibilidad:', response.data);
       return response.data;
     } catch (error) {
@@ -209,7 +210,7 @@ export const ProductsApi = {
       };
       console.log('Enviando solicitud de cálculo de precio:', requestBody);
       
-      const response = await apiClient.post('/api/products/calculate-price', requestBody);
+      const response = await apiClient.post(getApiUrl('products/calculate-price'), requestBody);
       
       console.log('Respuesta completa de cálculo de precio:', response);
       console.log('Datos de respuesta de cálculo de precio:', response.data);

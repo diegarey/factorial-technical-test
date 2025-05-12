@@ -1,5 +1,6 @@
 import apiClient from './client';
 import { AddToCartRequest } from '../types/product';
+import { getApiUrl } from '../config/api';
 
 export interface CartItem {
   id: number;
@@ -84,7 +85,7 @@ export const CartApi = {
     try {
       // Obtenemos el carrito del servidor - esto debería usar cookies automáticamente
       console.log('Solicitando carrito del servidor');
-      const response = await apiClient.get('/api/cart');
+      const response = await apiClient.get(getApiUrl('cart'));
       const cart = response.data;
       
       // Guardar el ID del carrito en localStorage como respaldo
@@ -102,7 +103,7 @@ export const CartApi = {
         console.log(`Intentando recuperar carrito por ID desde localStorage: ${cartIdFromStorage}`);
         try {
           // Incluir el ID del carrito de localStorage como parámetro de consulta
-          const fallbackResponse = await apiClient.get(`/api/cart?cart_id=${cartIdFromStorage}`);
+          const fallbackResponse = await apiClient.get(getApiUrl(`cart?cart_id=${cartIdFromStorage}`));
           return normalizeCartData(fallbackResponse.data);
         } catch (fallbackError) {
           console.error('Error al recuperar carrito con ID de localStorage:', fallbackError);
@@ -141,18 +142,19 @@ export const CartApi = {
       
       // Obtener el ID del carrito de localStorage como respaldo
       const cartIdFromStorage = getCartIdFromLocalStorage();
-      let url = '/api/cart/items';
+      let url = 'cart/items';
+      let params = {};
       
       // Si tenemos un ID del carrito en localStorage, lo añadimos como parámetro de consulta
       if (cartIdFromStorage) {
-        url = `${url}?cart_id=${cartIdFromStorage}`;
+        params = { cart_id: cartIdFromStorage };
         console.log(`Añadiendo ID del carrito como parámetro: ${cartIdFromStorage}`);
       } else {
         console.log('No se encontró ID del carrito en localStorage');
       }
       
-      console.log(`Enviando solicitud POST a: ${url}`);
-      const response = await apiClient.post(url, requestBody);
+      console.log(`Enviando solicitud POST a: ${getApiUrl(url)}`);
+      const response = await apiClient.post(getApiUrl(url), requestBody, { params });
       
       console.log('Respuesta de añadir al carrito:', response.data);
       console.log('Estado de las cookies después de la solicitud:', document.cookie);
@@ -199,32 +201,15 @@ export const CartApi = {
   /**
    * Actualiza la cantidad de un producto en el carrito
    */
-  updateCartItem: async (itemId: number, quantity: number): Promise<CartItem> => {
+  updateCartItemQuantity: async (itemId: number, quantity: number): Promise<CartItem> => {
     try {
-      const response = await apiClient.put(`/api/cart/items/${itemId}`, { quantity });
-      
-      // Normalizar el item retornado
-      const item = response.data.cart_item;
-      return {
-        ...item,
-        price_snapshot: typeof item.price_snapshot === 'number' 
-          ? item.price_snapshot 
-          : parseFloat(String(item.price_snapshot)) || 0
-      };
+      console.log(`Actualizando cantidad del ítem ${itemId} a ${quantity}`);
+      const response = await apiClient.put(getApiUrl(`cart/items/${itemId}`), null, {
+        params: { quantity }
+      });
+      return response.data.cart_item;
     } catch (error) {
-      console.error('Error al actualizar el ítem del carrito:', error);
-      
-      // Simular respuesta en modo desarrollo
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Simulando respuesta de actualización en modo desarrollo');
-        return {
-          id: itemId,
-          product_id: 1,
-          price_snapshot: 100,
-          quantity: quantity,
-          options: []
-        };
-      }
+      console.error('Error al actualizar ítem del carrito:', error);
       throw error;
     }
   },
@@ -234,15 +219,10 @@ export const CartApi = {
    */
   removeCartItem: async (itemId: number): Promise<void> => {
     try {
-      await apiClient.delete(`/api/cart/items/${itemId}`);
+      console.log(`Eliminando ítem ${itemId} del carrito`);
+      await apiClient.delete(getApiUrl(`cart/items/${itemId}`));
     } catch (error) {
       console.error('Error al eliminar ítem del carrito:', error);
-      
-      // En modo desarrollo, simplemente log
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Simulando eliminación de ítem en modo desarrollo');
-        return;
-      }
       throw error;
     }
   }

@@ -1,6 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.routes import products, cart, admin
+from app.api.routes.v1 import products as products_v1
+from app.api.routes.v1 import cart as cart_v1
+from app.api.routes.v1 import admin as admin_v1
+from app.api.routes import compatibility
 from app.db.database import create_tables, get_db
 from app.db.init_db import create_initial_data
 
@@ -26,10 +29,13 @@ app.add_middleware(
     expose_headers=["Set-Cookie"],  # Exponer el encabezado Set-Cookie
 )
 
-# Incluir rutas
-app.include_router(products.router, prefix="/api", tags=["products"])
-app.include_router(cart.router, prefix="/api", tags=["cart"])
-app.include_router(admin.router, prefix="/api", tags=["admin"])
+# Incluir rutas versionadas v1
+app.include_router(products_v1.router, prefix="/api/v1", tags=["products"])
+app.include_router(cart_v1.router, prefix="/api/v1", tags=["cart"])
+app.include_router(admin_v1.router, prefix="/api/v1", tags=["admin"])
+
+# Compatibilidad con versiones anteriores
+app.include_router(compatibility.router, prefix="/api", tags=["compatibility"])
 
 @app.on_event("startup")
 async def startup():

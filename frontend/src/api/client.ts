@@ -1,12 +1,10 @@
 import axios from 'axios';
+import { API_BASE_URL, API_VERSION } from '../config/api';
 
-// En entorno dockerizado, necesitamos usar la URL desde el navegador, no desde el contenedor
-const API_URL = 'http://localhost:8000';
-
-console.log(`Usando API URL: ${API_URL}`);
+console.log(`Usando API URL: ${API_BASE_URL}, versión: ${API_VERSION}`);
 
 const apiClient = axios.create({
-  baseURL: API_URL,
+  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -72,4 +70,5 @@ apiClient.interceptors.response.use(
   }
 );
 
-export default apiClient; 
+export default apiClient;
+export { API_VERSION }; 
