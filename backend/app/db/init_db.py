@@ -78,7 +78,7 @@ def init_db(db: Session):
         name="E-Bike Urban Commuter",
         category="electric",
         is_active=True,
-        featured=True,
+        featured=False,
         base_price=Decimal("1299.00"),
         image_url="https://images.unsplash.com/photo-1571068316344-75bc76f77890?q=80&w=1200"
     )
@@ -98,7 +98,7 @@ def init_db(db: Session):
         name="Gravel Adventure Explorer",
         category="gravel",
         is_active=True,
-        featured=True,
+        featured=False,
         base_price=Decimal("749.00"),
         image_url="https://images.unsplash.com/photo-1593764592116-bfb2a97c642a?q=80&w=1200"
     )
@@ -128,7 +128,7 @@ def init_db(db: Session):
         name="Fixie Urban Style",
         category="fixie",
         is_active=True,
-        featured=True,
+        featured=False,
         base_price=Decimal("389.00"),
         image_url="https://images.unsplash.com/photo-1532298229144-0ec0c57515c7?q=80&w=1200"
     )
@@ -142,7 +142,7 @@ def init_db(db: Session):
         name="Esquís Alpinos Freestyle",
         category="ski",
         is_active=True,
-        featured=True,
+        featured=False,
         base_price=Decimal("499.00"),
         image_url="https://images.unsplash.com/photo-1565992441121-4367c2967103?q=80&w=1200"
     )
@@ -162,7 +162,7 @@ def init_db(db: Session):
         name="Tabla de Surf Performance",
         category="surf",
         is_active=True,
-        featured=True,
+        featured=False,
         base_price=Decimal("659.00"),
         image_url="https://images.unsplash.com/photo-1531722569936-825d3dd91b15?q=80&w=1200"
     )
@@ -182,7 +182,7 @@ def init_db(db: Session):
         name="Patines en Línea Urban",
         category="skates",
         is_active=True,
-        featured=True,
+        featured=False,
         base_price=Decimal("249.00"),
         image_url="https://images.unsplash.com/photo-1615670318351-d16f7ed3f74c?q=80&w=1200"
     )
@@ -192,7 +192,7 @@ def init_db(db: Session):
         name="Patines Clásicos Retro",
         category="skates",
         is_active=True,
-        featured=True,
+        featured=False,
         base_price=Decimal("199.00"),
         image_url="https://plus.unsplash.com/premium_photo-1664444389247-d63164696f8f?q=80&w=1200"
     )
@@ -202,7 +202,7 @@ def init_db(db: Session):
         name="Paddle Surf Performance",
         category="surf",
         is_active=True,
-        featured=True,
+        featured=False,
         base_price=Decimal("899.00"),
         image_url="https://images.unsplash.com/photo-1600970188293-313e1f61beb0?q=80&w=1200"
     )
@@ -212,7 +212,7 @@ def init_db(db: Session):
         name="Snowboard All Mountain",
         category="snow",
         is_active=True,
-        featured=True,
+        featured=False,
         base_price=Decimal("549.00"),
         image_url="https://images.unsplash.com/photo-1610233426515-9e231999845d?q=80&w=1200"
     )
