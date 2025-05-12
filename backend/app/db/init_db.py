@@ -90,7 +90,7 @@ def init_db(db: Session):
         is_active=True,
         featured=False,
         base_price=Decimal("449.00"),
-        image_url="https://images.unsplash.com/photo-1583729501158-e040bf6a4d1a?q=80&w=1200"
+        image_url="https://images.unsplash.com/photo-1575585269294-7d28dd912db8?q=80&w=1200"
     )
     
     # 7. Bicicleta de gravel
@@ -110,7 +110,7 @@ def init_db(db: Session):
         is_active=True,
         featured=False,
         base_price=Decimal("299.00"),
-        image_url="https://images.unsplash.com/photo-1595432541891-a461100d3054?q=80&w=1200"
+        image_url="https://images.unsplash.com/photo-1636208644638-38d38962235a?q=80&w=1200"
     )
     
     # 9. Bicicleta plegable
@@ -120,7 +120,7 @@ def init_db(db: Session):
         is_active=True,
         featured=False,
         base_price=Decimal("529.00"),
-        image_url="https://images.unsplash.com/photo-1591637333184-19aa84b3e01f?q=80&w=1200"
+        image_url="https://images.unsplash.com/photo-1597921045416-11eb2f9d2a5b?q=80&w=1200"
     )
     
     # 10. Bicicleta fixie / single-speed
@@ -130,7 +130,7 @@ def init_db(db: Session):
         is_active=True,
         featured=True,
         base_price=Decimal("389.00"),
-        image_url="https://images.unsplash.com/photo-1505157224916-94dcb50a944b?q=80&w=1200"
+        image_url="https://images.unsplash.com/photo-1532298229144-0ec0c57515c7?q=80&w=1200"
     )
     
     #--------------------------------------------------------------------------
@@ -174,7 +174,7 @@ def init_db(db: Session):
         is_active=True,
         featured=False,
         base_price=Decimal("189.00"),
-        image_url="https://images.unsplash.com/photo-1513737567531-bc431f8611bf?q=80&w=1200"
+        image_url="https://images.unsplash.com/photo-1502680390469-be75c86b636f?q=80&w=1200"
     )
     
     # 15. Patines en línea
@@ -184,7 +184,7 @@ def init_db(db: Session):
         is_active=True,
         featured=True,
         base_price=Decimal("249.00"),
-        image_url="https://images.unsplash.com/photo-1600188769687-cb15fdb4cf4f?q=80&w=1200"
+        image_url="https://images.unsplash.com/photo-1578682505792-4f1da12d8183?q=80&w=1200"
     )
     
     # 16. Patines tradicionales (quad)
@@ -194,7 +194,7 @@ def init_db(db: Session):
         is_active=True,
         featured=True,
         base_price=Decimal("199.00"),
-        image_url="https://images.unsplash.com/photo-1599058917765-a780eda07a3e?q=80&w=1200"
+        image_url="https://images.unsplash.com/photo-1604009306763-ebab3931a507?q=80&w=1200"
     )
     
     # 17. Tabla de paddle surf
@@ -204,7 +204,7 @@ def init_db(db: Session):
         is_active=True,
         featured=True,
         base_price=Decimal("899.00"),
-        image_url="https://images.unsplash.com/photo-1526404423292-15c9ac29bb4c?q=80&w=1200"
+        image_url="https://images.unsplash.com/photo-1526046881250-dbec3e134205?q=80&w=1200"
     )
     
     # 18. Tabla de snowboard
@@ -214,7 +214,7 @@ def init_db(db: Session):
         is_active=True,
         featured=True,
         base_price=Decimal("549.00"),
-        image_url="https://images.unsplash.com/photo-1522056615691-bad9ec4e0c64?q=80&w=1200"
+        image_url="https://images.unsplash.com/photo-1622653953939-9a801340d252?q=80&w=1200"
     )
     
     # Añadir todos los productos a la base de datos
