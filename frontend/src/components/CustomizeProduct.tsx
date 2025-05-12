@@ -13,63 +13,63 @@ interface CustomizeProductProps {
 const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
   const router = useRouter();
   const [selectedOptions, setSelectedOptions] = useState<Record<number, number>>({});
-  const [totalPrice, setTotalPrice] = useState<number>(() => {
-    if (typeof product.basePrice === 'number' && !isNaN(product.basePrice) && product.basePrice > 0) {
-      return product.basePrice;
-    } else if (product.id === 1) {
-      return 599; // Fallback para Mountain Bike Premium
-    }
-    return 0;
-  });
+  const [totalPrice, setTotalPrice] = useState<number>(0); // Inicializar a 0 y actualizar en useEffect
   const [availableOptions, setAvailableOptions] = useState<AvailablePartType[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState<number | null>(null);
 
   // Log para depuración
-  console.log('Producto recibido en CustomizeProduct:', product);
-  console.log('Precio base del producto:', product.basePrice, typeof product.basePrice);
+  console.log('>>>>>>> PRODUCTO RECIBIDO EN CUSTOMIZEPRODUCT:', product);
+  console.log('>>>>>>> PRECIO BASE DEL PRODUCTO:', product.basePrice, typeof product.basePrice);
+  console.log('>>>>>>> PRECIO BASE CONVERTIDO A NÚMERO:', Number(product.basePrice));
+  console.log('>>>>>>> OBJETO COMPLETO DEL PRODUCTO:', JSON.stringify(product, null, 2));
 
-  // Efecto para inicializar el precio base correctamente
+  // Efecto para inicializar el precio base correctamente - usar SOLO datos de la API
   useEffect(() => {
-    // Intentar obtener el precio base del producto y asegurarse de que sea un número
+    // Intentar diferentes fuentes para el precio base
     let basePrice = 0;
-    if (product && typeof product.basePrice === 'number') {
-      basePrice = product.basePrice;
-    } else if (product) {
-      // Intentar parsear el precio base si existe pero no es un número
-      try {
-        const rawValue = product.basePrice;
-        basePrice = typeof rawValue === 'string' ? parseFloat(rawValue) : 0;
-      } catch (e) {
-        console.error('Error al parsear precio base:', e);
+    
+    // 1. Intentar directamente base_price (propiedad original API)
+    const rawProduct = product as any;
+    if (rawProduct && rawProduct.base_price !== undefined && rawProduct.base_price !== null) {
+      if (typeof rawProduct.base_price === 'string') {
+        basePrice = parseFloat(rawProduct.base_price);
+      } else if (typeof rawProduct.base_price === 'number') {
+        basePrice = rawProduct.base_price;
       }
     }
     
-    // Si aún así el precio base es NaN o indefinido, usar 599 como fallback (precio base de la Mountain Bike Premium)
-    if (isNaN(basePrice) || basePrice === 0) {
-      console.warn('Precio base inválido. Usando precio por defecto.', product.id === 1 ? 599 : 0);
-      basePrice = product.id === 1 ? 599 : 0; // Usar 599 para la Mountain Bike Premium (ID 1)
+    // 2. Si no hay base_price, intentar usar basePrice (propiedad transformada)
+    if (basePrice <= 0 && product.basePrice !== undefined && product.basePrice !== null) {
+      if (typeof product.basePrice === 'string') {
+        basePrice = parseFloat(product.basePrice);
+      } else if (typeof product.basePrice === 'number') {
+        basePrice = product.basePrice;
+      }
     }
     
-    console.log(`Inicializando precio base: ${basePrice}`);
-    setTotalPrice(basePrice);
+    // Validar que el precio sea un número positivo
+    if (isNaN(basePrice) || basePrice < 0) {
+      console.error('No se pudo obtener un precio base válido');
+      basePrice = 0;
+    }
+    
+    // Actualizar el precio total
+    if (basePrice > 0) {
+      console.log(`Inicializando precio total con precio base: ${basePrice}`);
+      setTotalPrice(basePrice);
+    } else {
+      console.warn('Inicializando precio total a 0 porque no se encontró un precio base válido');
+      setTotalPrice(0);
+    }
   }, [product]);
 
   // Cargar opciones disponibles cuando cambia la selección
   useEffect(() => {
     // Detectar específicamente si "Aro Rojo" está entre las opciones seleccionadas
     const selectedOptionIds = Object.values(selectedOptions);
-    const hasAroRojo = (() => {
-      for (const partType of partTypesToRender) {
-        if (partType.name === "Color de Aro") {
-          const selectedOptionId = selectedOptions[partType.id];
-          const option = partType.options.find(opt => opt.id === selectedOptionId);
-          return option && option.name === "Aro Rojo";
-        }
-      }
-      return false;
-    })();
+    const hasAroRojo = false; // Eliminamos esta detección que no es necesaria y está causando problemas de tipo
 
     if (hasAroRojo) {
       console.log("********** ARO ROJO ESTÁ SELECCIONADO EN EL USEEFFECT **********");
@@ -99,10 +99,10 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
           setError('Las opciones recibidas tienen un formato inesperado.');
         }
         
-        // Asegurar que el precio base sea un número válido (hacerlo fuera del if para no repetir código)
+        // Asegurar que el precio base sea un número válido
         const basePrice = typeof product.basePrice === 'number' && !isNaN(product.basePrice) && product.basePrice > 0
           ? product.basePrice 
-          : (product.id === 1 ? 599 : 0); // Fallback para Mountain Bike Premium
+          : 0;
         
         console.log(`Usando precio base: ${basePrice} para el cálculo`);
         
@@ -144,7 +144,7 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
         // Asegurarse de que al menos el precio base esté configurado en caso de error
         const basePrice = typeof product.basePrice === 'number' && !isNaN(product.basePrice) && product.basePrice > 0
           ? product.basePrice 
-          : (product.id === 1 ? 599 : 0);
+          : 0;
         setTotalPrice(basePrice);
       } finally {
         setLoading(false);
@@ -158,10 +158,12 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
     console.log(`Seleccionando opción: partTypeId=${partTypeId}, optionId=${optionId}`);
     
     // Obtener la opción seleccionada para obtener su precio
-    let selectedOption = null;
+    let selectedOption: any = null;
     const partType = partTypesToRender.find(pt => pt.id === partTypeId);
-    if (partType && partType.options) {
-      selectedOption = partType.options.find(opt => opt.id === optionId);
+    if (partType) {
+      // Asegurar que options existe y es un array
+      const options = Array.isArray(partType.options) ? partType.options : [];
+      selectedOption = options.find(opt => opt.id === optionId);
     }
 
     // Detección especial para Aro Rojo
@@ -375,7 +377,11 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
                 <h3 className="font-semibold text-secondary mb-3">Características del producto</h3>
                 <ul className="list-disc pl-5 text-gray-600 space-y-2">
                   <li>Categoría: <span className="font-medium">{product.category}</span></li>
-                  <li>Precio: <span className="font-medium text-primary text-lg">€{product.basePrice ? product.basePrice.toFixed(2) : '0.00'}</span></li>
+                  <li>Precio: <span className="font-medium text-primary text-lg">
+                    €{(typeof product.basePrice === 'number' && !isNaN(product.basePrice)) 
+                      ? product.basePrice.toFixed(2) 
+                      : (parseFloat(String(product.basePrice)) || 0).toFixed(2)}
+                  </span></li>
                   {product.description && <li>Descripción completa: <span className="font-medium">{product.description}</span></li>}
                 </ul>
               </div>
@@ -579,15 +585,9 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
                 <div className="flex justify-between mb-2">
                   <span className="font-medium text-gray-700">Precio base</span>
                   <span className="font-bold">
-                    €{(() => {
-                      if (typeof product.basePrice === 'number' && !isNaN(product.basePrice) && product.basePrice > 0) {
-                        return product.basePrice.toFixed(2);
-                      } else if (product.id === 1) {
-                        return '599.00';
-                      } else {
-                        return '0.00';
-                      }
-                    })()}
+                    €{typeof product.basePrice === 'number' && !isNaN(product.basePrice) 
+                      ? product.basePrice.toFixed(2) 
+                      : (parseFloat(String(product.basePrice)) || 0).toFixed(2)}
                   </span>
                 </div>
               </div>
@@ -640,30 +640,7 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-gray-600">Subtotal</span>
                   <span className="font-bold text-xl text-gray-800">
-                    €{(() => {
-                      // Obtener el precio base
-                      const basePrice = typeof product.basePrice === 'number' && !isNaN(product.basePrice) && product.basePrice > 0
-                        ? product.basePrice
-                        : (product.id === 1 ? 599 : 0);
-                      
-                      // Calcular el precio total de las opciones seleccionadas
-                      let optionsPrice = 0;
-                      for (const partType of partTypesToRender) {
-                        const selectedOptionId = selectedOptions[partType.id];
-                        if (selectedOptionId) {
-                          const option = partType.options.find(opt => opt.id === selectedOptionId);
-                          if (option && typeof option.base_price === 'number') {
-                            optionsPrice += option.base_price;
-                          }
-                        }
-                      }
-                      
-                      // Crear el precio total
-                      const calculatedTotal = basePrice + optionsPrice;
-                      const finalPrice = Math.max(calculatedTotal, totalPrice);
-                      
-                      return finalPrice.toFixed(2);
-                    })()}
+                    €{totalPrice.toFixed(2)}
                   </span>
                 </div>
                 <p className="text-xs text-gray-500 mb-6">Los precios incluyen IVA</p>

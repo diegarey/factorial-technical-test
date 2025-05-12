@@ -251,7 +251,9 @@ export default function Home() {
                       </p>
                       <div className="flex items-center justify-between">
                         <span className="text-2xl font-bold text-primary">
-                          €{(product.basePrice || 0).toFixed(2)}
+                          €{(typeof product.basePrice === 'number' && !isNaN(product.basePrice)) 
+                            ? product.basePrice.toFixed(2) 
+                            : (parseFloat(String(product.basePrice)) || 0).toFixed(2)}
                         </span>
                         <Link 
                           href={`/products/${product.id}/customize`} 

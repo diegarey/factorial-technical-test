@@ -31,15 +31,59 @@ export default function CustomizePage() {
         }
         
         console.log(`Obteniendo producto ${numericId}`);
-        const data = await ProductsApi.getProduct(numericId);
-        console.log('Datos del producto recibidos:', data);
-        
-        if (data && data.id) {
-          setProduct(data);
-          setError(null);
-        } else {
-          throw new Error('Datos de producto incompletos o inválidos');
+        try {
+          // Intentar obtener por el endpoint de detalle
+          const data = await ProductsApi.getProduct(numericId);
+          console.log('Datos del producto recibidos:', data);
+          
+          if (data && data.id) {
+            setProduct(data);
+            setError(null);
+            return;
+          }
+        } catch (detailError) {
+          console.error('Error al obtener detalle del producto:', detailError);
+          
+          // Si falla, intentar obtener de la lista de productos
+          console.log('Intentando obtener producto desde la lista...');
+          const { products } = await ProductsApi.getProducts(1, 20);
+          const productFromList = products.find(p => p.id === numericId);
+          
+          if (productFromList) {
+            console.log('Producto encontrado en la lista:', productFromList);
+            
+            // Obtener las opciones del producto
+            try {
+              const options = await ProductsApi.getProductOptions(numericId, []);
+              
+              // Crear un producto completo con las opciones
+              const completeProduct = {
+                ...productFromList,
+                basePrice: typeof productFromList.basePrice === 'string' 
+                  ? parseFloat(productFromList.basePrice) 
+                  : (productFromList.basePrice || 0),
+                partTypes: options
+              };
+              
+              // Log adicional para verificar
+              console.log('Precio base en completeProduct:', completeProduct.basePrice, typeof completeProduct.basePrice);
+              
+              console.log('Producto completo construido:', completeProduct);
+              setProduct(completeProduct);
+              setError(null);
+              return;
+            } catch (optionsError) {
+              console.error('Error al obtener opciones:', optionsError);
+              // Si no podemos obtener opciones, usar el producto sin opciones
+              setProduct(productFromList);
+              setError(null);
+              return;
+            }
+          }
         }
+        
+        // Si llegamos aquí, no se pudo obtener el producto
+        throw new Error('No se pudo encontrar información del producto');
       } catch (err: any) {
         console.error('Error al cargar el producto:', err);
         

@@ -11,22 +11,32 @@ const transformProductData = (data: any): Product => {
   // Verificar que part_types existe y es un array
   const partTypes = Array.isArray(data.part_types) ? data.part_types : [];
   
-  // Procesar el precio base con más cuidado
+  // Procesar el precio base directamente desde el backend
+  // El backend devuelve el precio base como string cuando es un Decimal
   let basePrice = 0;
   
+  // Intentar diferentes fuentes para el precio base
   if (data.base_price !== undefined && data.base_price !== null) {
-    // Primero intentar convertir a número si es string
+    // Convertir a número si es string
     if (typeof data.base_price === 'string') {
       basePrice = parseFloat(data.base_price);
     } else if (typeof data.base_price === 'number') {
       basePrice = data.base_price;
     }
+  } else if (data.basePrice !== undefined && data.basePrice !== null) {
+    // También intentar con basePrice por si ya está transformado
+    if (typeof data.basePrice === 'string') {
+      basePrice = parseFloat(data.basePrice);
+    } else if (typeof data.basePrice === 'number') {
+      basePrice = data.basePrice;
+    }
   }
   
-  // Si el precio es NaN o 0 y es el producto con ID 1 (Mountain Bike Premium), usar 599
-  if ((isNaN(basePrice) || basePrice === 0) && data.id === 1) {
-    console.warn(`Precio base inválido para producto ID=${data.id}. Usando precio por defecto 599.`);
-    basePrice = 599;
+  // Validar que el precio base sea un número positivo válido
+  if (isNaN(basePrice) || basePrice < 0) {
+    console.error(`Precio base inválido recibido del backend para el producto ID=${data.id}: ${data.base_price}`);
+    console.error('Se requiere un precio base válido desde el backend');
+    basePrice = 0; // Asignar 0 como valor por defecto en caso de error
   }
   
   const transformed = {
@@ -83,52 +93,51 @@ export const ProductsApi = {
     } catch (error: any) {
       console.error(`Error al obtener producto ${productId}:`, error);
       
-      // Nombres conocidos para productos comunes
-      const knownProductNames: Record<number, string> = {
-        1: 'Mountain Bike Premium',
-        2: 'Bicicleta de Carretera Pro',
-        3: 'Bicicleta Urbana Deluxe',
-        4: 'Bicicleta Híbrida Todo Terreno',
-        5: 'E-Bike Urban Commuter',
-        6: 'BMX Freestyle Pro',
-        7: 'Gravel Adventure Explorer'
-      };
-      
-      // Precios base conocidos
-      const knownBasePrices: Record<number, number> = {
-        1: 599,
-        2: 699,
-        3: 499,
-        4: 549,
-        5: 1299,
-        6: 449,
-        7: 749
-      };
-      
-      // Si hay un error, intentamos cargar las opciones desde el endpoint options
-      // Esto es un fallback en caso de que el endpoint de detalle del producto falle
+      // En caso de error, intentar obtener información básica del producto y sus opciones
       try {
-        console.log(`Intentando obtener opciones para el producto ${productId}`);
+        // Intentar obtener productos para ver si podemos encontrar este producto con su precio base
+        const productsResponse = await apiClient.get(getApiUrl(`products/`), {
+          params: { skip: 0, limit: 100 }
+        });
+        
+        // Buscar el producto en la lista
+        const productFromList = productsResponse.data.items.find((item: any) => item.id === productId);
+        
+        if (productFromList) {
+          console.log(`Producto ${productId} encontrado en la lista de productos:`, productFromList);
+          
+          // Ahora obtenemos las opciones
+          const optionsResponse = await apiClient.get(getApiUrl(`products/${productId}/options`));
+          
+          // Construir un producto completo con la información encontrada
+          const fallbackProduct = transformProductData({
+            ...productFromList,
+            part_types: optionsResponse.data
+          });
+          
+          console.log('Producto reconstruido con datos de la lista y opciones:', fallbackProduct);
+          return fallbackProduct;
+        }
+        
+        // Si no lo encontramos en la lista, intentar solo con las opciones
+        console.log(`Intentando obtener solo opciones para el producto ${productId}`);
         const optionsResponse = await apiClient.get(getApiUrl(`products/${productId}/options`));
         
-        // Usar nombre conocido si está disponible, de lo contrario usar nombre genérico
-        const productName = knownProductNames[productId] || `Bicicleta ${productId}`;
-        // Usar precio base conocido si está disponible, de lo contrario usar 0
-        const basePrice = knownBasePrices[productId] || 0;
-        
-        // Construir un producto mínimo con las opciones disponibles
-        const fallbackProduct: Product = {
+        // Construir un producto mínimo con la información disponible
+        const minimalProduct: Product = {
           id: productId,
-          name: productName,
-          category: 'mountain',
-          basePrice: basePrice,
+          name: `Producto ${productId}`,
+          category: 'general',
+          basePrice: 599, // Valor por defecto razonable en caso de error
           image: 'https://images.unsplash.com/photo-1576435728678-68d0fbf94e91?q=80&w=1200',
           partTypes: optionsResponse.data,
         };
         
-        console.log('Producto construido a partir de opciones:', fallbackProduct);
-        return fallbackProduct;
-      } catch {
+        console.log('Producto construido a partir de opciones (mínimo):', minimalProduct);
+        console.warn('ADVERTENCIA: Se está usando un producto de respaldo con precio base estimado. El backend debe proporcionar esta información correctamente.');
+        return minimalProduct;
+      } catch (fallbackError) {
+        console.error('Error también al intentar reconstruir el producto:', fallbackError);
         // Si también falla, propagamos el error original
         throw error;
       }

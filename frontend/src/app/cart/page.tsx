@@ -121,7 +121,7 @@ export default function CartPage() {
     
     try {
       setLoading(true);
-      await CartApi.updateCartItem(itemId, quantity);
+      await CartApi.updateCartItemQuantity(itemId, quantity);
       await fetchCart(); // Recargar el carrito
     } catch (error) {
       console.error('Error al actualizar la cantidad:', error);
@@ -164,12 +164,8 @@ export default function CartPage() {
       return productsData[productId].name;
     }
     
-    // Nombres conocidos para bicicletas comunes
-    const knownProductNames: Record<number, string> = {
-      1: 'Mountain Bike Premium'
-    };
-    
-    return knownProductNames[productId] || `Bicicleta ${productId}`;
+    // Si no tenemos los datos, usar un nombre genérico dependiente del ID
+    return `Producto ${productId}`;
   };
 
   // Agrupar opciones por tipo de parte
@@ -202,18 +198,9 @@ export default function CartPage() {
       return productsData[productId].basePrice;
     }
     
-    // Precios base conocidos para productos comunes
-    const knownBasePrices: Record<number, number> = {
-      1: 599 // Mountain Bike Premium
-    };
-    
-    // Si el producto está en la lista de precios conocidos, usar ese precio
-    if (productId in knownBasePrices) {
-      return knownBasePrices[productId];
-    }
-    
-    // Si llegamos aquí, usar un precio base por defecto
-    return 599; // Usar 599 como precio por defecto para cualquier bicicleta
+    // Si no tenemos el dato o es 0, retornar un valor razonable por defecto
+    console.warn(`No se encontró un precio base válido para el producto ${productId}, usando precio por defecto (599)`);
+    return 599; // Precio base por defecto razonable
   };
 
   if (loading && !cart) {
