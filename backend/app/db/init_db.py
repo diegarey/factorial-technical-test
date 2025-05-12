@@ -133,13 +133,391 @@ def init_db(db: Session):
         image_url="https://images.unsplash.com/photo-1505157224916-94dcb50a944b?q=80&w=1200"
     )
     
+    #--------------------------------------------------------------------------
+    # PRODUCTOS DEPORTIVOS ADICIONALES (EXPANSIÓN DE NEGOCIO)
+    #--------------------------------------------------------------------------
+    
+    # 11. Esquís alpinos
+    alpine_ski = Product(
+        name="Esquís Alpinos Freestyle",
+        category="ski",
+        is_active=True,
+        featured=True,
+        base_price=Decimal("499.00"),
+        image_url="https://images.unsplash.com/photo-1565992441121-4367c2967103?q=80&w=1200"
+    )
+    
+    # 12. Esquís de fondo
+    cross_country_ski = Product(
+        name="Esquís de Fondo Racing",
+        category="ski",
+        is_active=True,
+        featured=False,
+        base_price=Decimal("399.00"),
+        image_url="https://images.unsplash.com/photo-1551698618-1dfe5d97d256?q=80&w=1200"
+    )
+    
+    # 13. Tabla de surf
+    surfboard = Product(
+        name="Tabla de Surf Performance",
+        category="surf",
+        is_active=True,
+        featured=True,
+        base_price=Decimal("659.00"),
+        image_url="https://images.unsplash.com/photo-1531722569936-825d3dd91b15?q=80&w=1200"
+    )
+    
+    # 14. Tabla de bodyboard
+    bodyboard = Product(
+        name="Bodyboard Pro",
+        category="surf",
+        is_active=True,
+        featured=False,
+        base_price=Decimal("189.00"),
+        image_url="https://images.unsplash.com/photo-1513737567531-bc431f8611bf?q=80&w=1200"
+    )
+    
+    # 15. Patines en línea
+    inline_skates = Product(
+        name="Patines en Línea Urban",
+        category="skates",
+        is_active=True,
+        featured=True,
+        base_price=Decimal("249.00"),
+        image_url="https://images.unsplash.com/photo-1600188769687-cb15fdb4cf4f?q=80&w=1200"
+    )
+    
+    # 16. Patines tradicionales (quad)
+    quad_skates = Product(
+        name="Patines Clásicos Retro",
+        category="skates",
+        is_active=True,
+        featured=True,
+        base_price=Decimal("199.00"),
+        image_url="https://images.unsplash.com/photo-1599058917765-a780eda07a3e?q=80&w=1200"
+    )
+    
+    # 17. Tabla de paddle surf
+    paddleboard = Product(
+        name="Paddle Surf Performance",
+        category="surf",
+        is_active=True,
+        featured=True,
+        base_price=Decimal("899.00"),
+        image_url="https://images.unsplash.com/photo-1526404423292-15c9ac29bb4c?q=80&w=1200"
+    )
+    
+    # 18. Tabla de snowboard
+    snowboard = Product(
+        name="Snowboard All Mountain",
+        category="snow",
+        is_active=True,
+        featured=True,
+        base_price=Decimal("549.00"),
+        image_url="https://images.unsplash.com/photo-1522056615691-bad9ec4e0c64?q=80&w=1200"
+    )
+    
     # Añadir todos los productos a la base de datos
     db.add_all([
         mountain_bike, road_bike, urban_bike, hybrid_bike, electric_bike, 
-        bmx_bike, gravel_bike, kids_bike, folding_bike, fixie_bike
+        bmx_bike, gravel_bike, kids_bike, folding_bike, fixie_bike,
+        alpine_ski, cross_country_ski, surfboard, bodyboard, 
+        inline_skates, quad_skates, paddleboard, snowboard
     ])
     db.flush()  # Para obtener el ID generado
     
+    # Configuración de productos deportivos adicionales con sus opciones personalizables
+    
+    #--------------------------------------------------------------------------
+    # CONFIGURACIÓN DE ESQUÍS ALPINOS
+    #--------------------------------------------------------------------------
+    
+    ski_size = PartType(name="Talla", product_id=alpine_ski.id)
+    ski_binding = PartType(name="Fijaciones", product_id=alpine_ski.id)
+    ski_level = PartType(name="Nivel", product_id=alpine_ski.id)
+    
+    db.add_all([ski_size, ski_binding, ski_level])
+    db.flush()
+    
+    # Opciones para talla
+    ski_size_150 = PartOption(
+        name="150 cm",
+        part_type_id=ski_size.id,
+        base_price=Decimal("0.00"),
+        in_stock=True
+    )
+    ski_size_160 = PartOption(
+        name="160 cm",
+        part_type_id=ski_size.id,
+        base_price=Decimal("0.00"),
+        in_stock=True
+    )
+    ski_size_170 = PartOption(
+        name="170 cm",
+        part_type_id=ski_size.id,
+        base_price=Decimal("20.00"),
+        in_stock=True
+    )
+    
+    # Opciones para fijaciones
+    ski_binding_basic = PartOption(
+        name="Fijaciones Básicas",
+        part_type_id=ski_binding.id,
+        base_price=Decimal("79.00"),
+        in_stock=True
+    )
+    ski_binding_advanced = PartOption(
+        name="Fijaciones Avanzadas",
+        part_type_id=ski_binding.id,
+        base_price=Decimal("149.00"),
+        in_stock=True
+    )
+    
+    # Opciones para nivel
+    ski_level_beginner = PartOption(
+        name="Principiante",
+        part_type_id=ski_level.id,
+        base_price=Decimal("-50.00"),  # Descuento para principiantes
+        in_stock=True
+    )
+    ski_level_intermediate = PartOption(
+        name="Intermedio",
+        part_type_id=ski_level.id,
+        base_price=Decimal("0.00"),
+        in_stock=True
+    )
+    ski_level_expert = PartOption(
+        name="Experto",
+        part_type_id=ski_level.id,
+        base_price=Decimal("100.00"),  # Premium para expertos
+        in_stock=True
+    )
+    
+    db.add_all([
+        ski_size_150, ski_size_160, ski_size_170,
+        ski_binding_basic, ski_binding_advanced,
+        ski_level_beginner, ski_level_intermediate, ski_level_expert
+    ])
+    db.flush()
+    
+    # Dependencias para esquís
+    
+    # Nivel avanzado requiere fijaciones avanzadas
+    ski_expert_req_advanced_binding = OptionDependency(
+        option_id=ski_level_expert.id,
+        depends_on_option_id=ski_binding_advanced.id,
+        type=DependencyType.requires
+    )
+    
+    db.add_all([ski_expert_req_advanced_binding])
+    db.flush()
+    
+    #--------------------------------------------------------------------------
+    # CONFIGURACIÓN DE TABLA DE SURF
+    #--------------------------------------------------------------------------
+    
+    surf_size = PartType(name="Tamaño", product_id=surfboard.id)
+    surf_fins = PartType(name="Quillas", product_id=surfboard.id)
+    surf_construction = PartType(name="Construcción", product_id=surfboard.id)
+    
+    db.add_all([surf_size, surf_fins, surf_construction])
+    db.flush()
+    
+    # Opciones para tamaño
+    surf_size_small = PartOption(
+        name="6'0\" - Shortboard",
+        part_type_id=surf_size.id,
+        base_price=Decimal("-50.00"),
+        in_stock=True
+    )
+    surf_size_medium = PartOption(
+        name="7'0\" - Mid-Length",
+        part_type_id=surf_size.id,
+        base_price=Decimal("0.00"),
+        in_stock=True
+    )
+    surf_size_large = PartOption(
+        name="8'0\" - Longboard",
+        part_type_id=surf_size.id,
+        base_price=Decimal("100.00"),
+        in_stock=True
+    )
+    
+    # Opciones para quillas
+    surf_fins_single = PartOption(
+        name="Single Fin",
+        part_type_id=surf_fins.id,
+        base_price=Decimal("30.00"),
+        in_stock=True
+    )
+    surf_fins_thruster = PartOption(
+        name="Thruster (3 Quillas)",
+        part_type_id=surf_fins.id,
+        base_price=Decimal("60.00"),
+        in_stock=True
+    )
+    surf_fins_quad = PartOption(
+        name="Quad (4 Quillas)",
+        part_type_id=surf_fins.id,
+        base_price=Decimal("80.00"),
+        in_stock=True
+    )
+    
+    # Opciones para construcción
+    surf_const_foam = PartOption(
+        name="Foam - Principiantes",
+        part_type_id=surf_construction.id,
+        base_price=Decimal("-100.00"),
+        in_stock=True
+    )
+    surf_const_epoxy = PartOption(
+        name="Epoxy",
+        part_type_id=surf_construction.id,
+        base_price=Decimal("0.00"),
+        in_stock=True
+    )
+    surf_const_polyester = PartOption(
+        name="Poliéster - Performance",
+        part_type_id=surf_construction.id,
+        base_price=Decimal("50.00"),
+        in_stock=True
+    )
+    
+    db.add_all([
+        surf_size_small, surf_size_medium, surf_size_large,
+        surf_fins_single, surf_fins_thruster, surf_fins_quad,
+        surf_const_foam, surf_const_epoxy, surf_const_polyester
+    ])
+    db.flush()
+    
+    # Dependencias para tablas de surf
+    
+    # Quillas quad no disponibles para tablas pequeñas
+    surf_small_exclude_quad = OptionDependency(
+        option_id=surf_size_small.id,
+        depends_on_option_id=surf_fins_quad.id,
+        type=DependencyType.excludes
+    )
+    
+    # Single fin típicamente para longboards
+    surf_single_requires_large = OptionDependency(
+        option_id=surf_fins_single.id,
+        depends_on_option_id=surf_size_large.id,
+        type=DependencyType.requires
+    )
+    
+    db.add_all([surf_small_exclude_quad, surf_single_requires_large])
+    db.flush()
+    
+    #--------------------------------------------------------------------------
+    # CONFIGURACIÓN DE PATINES EN LÍNEA
+    #--------------------------------------------------------------------------
+    
+    skate_size = PartType(name="Talla", product_id=inline_skates.id)
+    skate_wheels = PartType(name="Ruedas", product_id=inline_skates.id)
+    skate_bearings = PartType(name="Rodamientos", product_id=inline_skates.id)
+    
+    db.add_all([skate_size, skate_wheels, skate_bearings])
+    db.flush()
+    
+    # Opciones para talla
+    skate_size_38 = PartOption(
+        name="38 EU",
+        part_type_id=skate_size.id,
+        base_price=Decimal("0.00"),
+        in_stock=True
+    )
+    skate_size_40 = PartOption(
+        name="40 EU",
+        part_type_id=skate_size.id,
+        base_price=Decimal("0.00"),
+        in_stock=True
+    )
+    skate_size_42 = PartOption(
+        name="42 EU",
+        part_type_id=skate_size.id,
+        base_price=Decimal("0.00"),
+        in_stock=True
+    )
+    skate_size_44 = PartOption(
+        name="44 EU",
+        part_type_id=skate_size.id,
+        base_price=Decimal("10.00"),
+        in_stock=False
+    )
+    
+    # Opciones para ruedas
+    skate_wheels_76mm = PartOption(
+        name="76mm - Estándar",
+        part_type_id=skate_wheels.id,
+        base_price=Decimal("0.00"),
+        in_stock=True
+    )
+    skate_wheels_80mm = PartOption(
+        name="80mm - Velocidad",
+        part_type_id=skate_wheels.id,
+        base_price=Decimal("25.00"),
+        in_stock=True
+    )
+    skate_wheels_90mm = PartOption(
+        name="90mm - Racing",
+        part_type_id=skate_wheels.id,
+        base_price=Decimal("50.00"),
+        in_stock=True
+    )
+    
+    # Opciones para rodamientos
+    skate_bearings_abec5 = PartOption(
+        name="ABEC 5 - Estándar",
+        part_type_id=skate_bearings.id,
+        base_price=Decimal("0.00"),
+        in_stock=True
+    )
+    skate_bearings_abec7 = PartOption(
+        name="ABEC 7 - Velocidad",
+        part_type_id=skate_bearings.id,
+        base_price=Decimal("30.00"),
+        in_stock=True
+    )
+    skate_bearings_abec9 = PartOption(
+        name="ABEC 9 - Pro Racing",
+        part_type_id=skate_bearings.id,
+        base_price=Decimal("60.00"),
+        in_stock=True
+    )
+    
+    db.add_all([
+        skate_size_38, skate_size_40, skate_size_42, skate_size_44,
+        skate_wheels_76mm, skate_wheels_80mm, skate_wheels_90mm,
+        skate_bearings_abec5, skate_bearings_abec7, skate_bearings_abec9
+    ])
+    db.flush()
+    
+    # Dependencias para patines
+    
+    # Ruedas grandes (90mm) requieren rodamientos premium
+    skate_90mm_req_abec7 = OptionDependency(
+        option_id=skate_wheels_90mm.id,
+        depends_on_option_id=skate_bearings_abec7.id,
+        type=DependencyType.requires
+    )
+    
+    db.add_all([skate_90mm_req_abec7])
+    db.flush()
+    
+    # Precios condicionales
+    
+    # Descuento al elegir rodamientos premium y ruedas premium juntos
+    skate_premium_bundle = ConditionalPrice(
+        option_id=skate_bearings_abec9.id,
+        condition_option_id=skate_wheels_90mm.id,
+        conditional_price=Decimal("45.00")  # 15€ de descuento
+    )
+    
+    db.add_all([skate_premium_bundle])
+    db.flush()
+    
+    # A partir de aquí continúa la configuración original de las bicicletas
     #--------------------------------------------------------------------------
     # CONFIGURACIÓN DE MOUNTAIN BIKE COMO EJEMPLO PRINCIPAL
     #--------------------------------------------------------------------------
