@@ -110,7 +110,7 @@ def init_db(db: Session):
         is_active=True,
         featured=False,
         base_price=Decimal("299.00"),
-        image_url="https://images.unsplash.com/photo-1636208644638-38d38962235a?q=80&w=1200"
+        image_url="https://images.unsplash.com/photo-1743265149175-d561a9afb29c?q=80&w=1200"
     )
     
     # 9. Bicicleta plegable
@@ -120,7 +120,7 @@ def init_db(db: Session):
         is_active=True,
         featured=False,
         base_price=Decimal("529.00"),
-        image_url="https://images.unsplash.com/photo-1597921045416-11eb2f9d2a5b?q=80&w=1200"
+        image_url="https://images.unsplash.com/photo-1731489949619-17b0cbc49b58?q=80&w=1200"
     )
     
     # 10. Bicicleta fixie / single-speed
@@ -184,7 +184,7 @@ def init_db(db: Session):
         is_active=True,
         featured=True,
         base_price=Decimal("249.00"),
-        image_url="https://images.unsplash.com/photo-1578682505792-4f1da12d8183?q=80&w=1200"
+        image_url="https://images.unsplash.com/photo-1615670318351-d16f7ed3f74c?q=80&w=1200"
     )
     
     # 16. Patines tradicionales (quad)
@@ -194,7 +194,7 @@ def init_db(db: Session):
         is_active=True,
         featured=True,
         base_price=Decimal("199.00"),
-        image_url="https://images.unsplash.com/photo-1604009306763-ebab3931a507?q=80&w=1200"
+        image_url="https://plus.unsplash.com/premium_photo-1664444389247-d63164696f8f?q=80&w=1200"
     )
     
     # 17. Tabla de paddle surf
@@ -204,7 +204,7 @@ def init_db(db: Session):
         is_active=True,
         featured=True,
         base_price=Decimal("899.00"),
-        image_url="https://images.unsplash.com/photo-1526046881250-dbec3e134205?q=80&w=1200"
+        image_url="https://images.unsplash.com/photo-1600970188293-313e1f61beb0?q=80&w=1200"
     )
     
     # 18. Tabla de snowboard
@@ -214,7 +214,7 @@ def init_db(db: Session):
         is_active=True,
         featured=True,
         base_price=Decimal("549.00"),
-        image_url="https://images.unsplash.com/photo-1622653953939-9a801340d252?q=80&w=1200"
+        image_url="https://images.unsplash.com/photo-1610233426515-9e231999845d?q=80&w=1200"
     )
     
     # Añadir todos los productos a la base de datos
