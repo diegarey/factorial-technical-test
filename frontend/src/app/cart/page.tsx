@@ -233,41 +233,8 @@ export default function CartPage() {
           Añade algunos productos a tu carrito para continuar con la compra.
         </p>
         
-        {/* Panel de depuración */}
-        <div className="mt-8 p-4 border-t text-xs text-left max-w-2xl mx-auto">
-          <details>
-            <summary className="cursor-pointer text-gray-500 mb-2">Información de depuración</summary>
-            <div className="p-2 bg-gray-100 rounded">
-              <p>Cookies: {document.cookie || 'No hay cookies'}</p>
-              <p>Cart ID en localStorage: {(() => {
-                try {
-                  return localStorage.getItem('marcus_bikes_cart_id') || 'No hay ID guardado';
-                } catch (e) {
-                  return 'Error al acceder a localStorage';
-                }
-              })()}</p>
-              <div className="mt-2">
-                <button 
-                  onClick={() => {
-                    try {
-                      localStorage.removeItem('marcus_bikes_cart_id');
-                      console.log('ID del carrito eliminado de localStorage');
-                      window.location.reload();
-                    } catch (e) {
-                      console.warn('Error al eliminar ID de localStorage:', e);
-                    }
-                  }}
-                  className="text-red-500 underline"
-                >
-                  Eliminar datos de carrito y recargar
-                </button>
-              </div>
-            </div>
-          </details>
-        </div>
-        
         <Link href="/products" className="btn btn-primary">
-          Ver bicicletas
+          Ir a Tienda
         </Link>
       </div>
     );
