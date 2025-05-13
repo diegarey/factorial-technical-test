@@ -202,22 +202,20 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
   const handleAddToCart = async () => {
     try {
       setLoading(true);
-      console.log("=== INICIANDO PROCESO DE AÑADIR AL CARRITO (SIMPLIFICADO) ===");
+      console.log("=== INICIANDO PROCESO DE AÑADIR AL CARRITO ===");
       
-      // 1. Preparar los datos en un formato simple
+      // 1. Preparar los datos
       const productId = product.id;
       const selectedOptionIds = Object.values(selectedOptions);
       
       console.log(`Producto ID: ${productId}`);
       console.log(`Opciones seleccionadas: ${selectedOptionIds.join(", ")}`);
-      console.log(`Cantidad: 1`);
       
-      // 1.5 Primero validar compatibilidad antes de enviar al carrito
+      // 2. Validar compatibilidad antes de enviar al carrito
       console.log("Validando compatibilidad de opciones...");
       const compatibilityResult = await ProductsApi.validateCompatibility(selectedOptionIds);
       
       if (!compatibilityResult.is_compatible) {
-        // Extraer detalles de incompatibilidad
         let errorMessage = 'Las opciones seleccionadas no son compatibles entre sí.';
         if (compatibilityResult.incompatibility_details) {
           const details = compatibilityResult.incompatibility_details;
@@ -227,76 +225,39 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
             errorMessage = `La opción "${details.option_name}" requiere seleccionar "${details.required_option_name}".`;
           }
         }
-        // Mostrar mensaje de error
-        console.error('Error de compatibilidad:', errorMessage);
         alert(`No se puede añadir al carrito: ${errorMessage} Por favor, elige otra combinación.`);
         setLoading(false);
         return;
       }
       
-      // 2. Llamada directa a la API - ahora con validación previa
-      const url = '/api/cart/items';
-      const requestData = {
+      // 3. Usar CartApi para añadir al carrito
+      const result = await CartApi.addToCart({
         product_id: productId,
         selected_options: selectedOptionIds,
         quantity: 1
-      };
-      
-      console.log("Realizando solicitud directa al servidor...");
-      console.log("URL:", url);
-      console.log("Datos:", JSON.stringify(requestData));
-      
-      // Utilizar fetch directamente en lugar de la API para depurar mejor
-      const response = await fetch(`http://localhost:8000${url}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        credentials: 'include', // Incluir cookies
-        body: JSON.stringify(requestData)
       });
       
-      console.log(`Respuesta HTTP: ${response.status} ${response.statusText}`);
+      console.log("Producto añadido al carrito:", result);
       
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`Error en la respuesta: ${errorText}`);
-        
-        // Intentar extraer mensaje de error más amigable
-        let userMessage = 'Error al añadir el producto al carrito.';
-        try {
-          const errorJson = JSON.parse(errorText);
-          if (errorJson && errorJson.detail) {
-            userMessage = errorJson.detail;
-            // Simplificar mensajes de incompatibilidad que vienen del backend
-            if (userMessage.includes('Incompatibilidad:')) {
-              userMessage = userMessage.replace('Incompatibilidad: ', '');
-            }
-          }
-        } catch (e) {
-          // Si no es JSON, usar el texto completo
-          if (errorText && errorText.length < 100) {
-            userMessage = errorText;
-          }
-        }
-        
-        alert(`No se pudo añadir al carrito: ${userMessage}`);
-        throw new Error(`Error al añadir al carrito: ${response.status} ${response.statusText}`);
-      }
-      
-      const responseData = await response.json();
-      console.log("Datos de respuesta:", responseData);
-      
-      // 3. Mostrar mensaje y redirigir
+      // 4. Mostrar mensaje y redirigir
       alert('¡Producto añadido al carrito!');
-      console.log("Redirigiendo al carrito...");
       router.push('/cart');
       
     } catch (error) {
       console.error("ERROR AL AÑADIR AL CARRITO:", error);
-      setLoading(false);
-    } finally {
+      let errorMessage = 'No se pudo añadir al carrito';
+      
+      if (error instanceof Error) {
+        // Si es un error de la API, intentar extraer el mensaje
+        const apiError = error as any;
+        if (apiError.response?.data?.detail) {
+          errorMessage = apiError.response.data.detail;
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      alert(errorMessage);
       setLoading(false);
     }
   };

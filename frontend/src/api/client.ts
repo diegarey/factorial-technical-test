@@ -1,15 +1,16 @@
 import axios from 'axios';
-import { API_BASE_URL, API_VERSION } from '../config/api';
+import { getApiUrl } from '../config/api';
 
-console.log(`Usando API URL: ${API_BASE_URL}, versión: ${API_VERSION}`);
+console.log(`Usando API URL: ${getApiUrl('')}`);
 
 const apiClient = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: getApiUrl(''),
   headers: {
     'Content-Type': 'application/json',
+    'Accept': 'application/json'
   },
   timeout: 30000, // Aumentado el timeout a 30 segundos
-  withCredentials: true // Habilitamos el envío de cookies cross-origin
+  withCredentials: true // Habilitar el envío de cookies
 });
 
 // Interceptor para solicitudes
@@ -71,5 +72,4 @@ apiClient.interceptors.response.use(
   }
 );
 
-export default apiClient;
-export { API_VERSION }; 
+export default apiClient; 
