@@ -25,8 +25,9 @@ app.add_middleware(
     allow_origins=origins,
     allow_credentials=True,  # Importante para permitir cookies
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["Content-Type", "Accept", "Authorization", "X-Requested-With"],
-    expose_headers=["Set-Cookie"],  # Exponer el encabezado Set-Cookie
+    allow_headers=["Content-Type", "Accept", "Authorization", "X-Requested-With", "Origin"],
+    expose_headers=["Content-Type", "Content-Length", "Set-Cookie"],  # Exponer el encabezado Set-Cookie
+    max_age=86400,  # Caché preflight por 24 horas
 )
 
 # Incluir rutas versionadas v1

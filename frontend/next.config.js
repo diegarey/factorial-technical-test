@@ -3,24 +3,7 @@ const nextConfig = {
   reactStrictMode: true,
   // Configuración para imágenes
   images: {
-    domains: ['images.unsplash.com', 'randomuser.me', 'localhost'],
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'images.unsplash.com',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'randomuser.me',
-        pathname: '/**',
-      },
-      {
-        protocol: 'http',
-        hostname: 'localhost',
-        pathname: '/**',
-      }
-    ],
+    domains: ['localhost', '127.0.0.1', 'images.unsplash.com', 'randomuser.me'],
   },
   // Configuración para API
   async rewrites() {

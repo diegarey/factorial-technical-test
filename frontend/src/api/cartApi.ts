@@ -83,43 +83,25 @@ export const CartApi = {
    */
   getCart: async (): Promise<Cart> => {
     try {
-      // Obtenemos el carrito del servidor - esto debería usar cookies automáticamente
-      console.log('Solicitando carrito del servidor');
-      const response = await apiClient.get(getApiUrl('cart'));
+      const cartIdFromStorage = getCartIdFromLocalStorage();
+      console.log('ID del carrito en localStorage antes de la solicitud:', cartIdFromStorage);
+
+      // Obtener el carrito del servidor incluyendo el ID de localStorage como parámetro query_cart_id
+      const response = await apiClient.get(getApiUrl('cart'), {
+        params: cartIdFromStorage ? { query_cart_id: cartIdFromStorage } : undefined
+      });
+      
       const cart = response.data;
       
-      // Guardar el ID del carrito en localStorage como respaldo
+      // Guardar el ID del carrito en localStorage
       if (cart && cart.id) {
         saveCartIdToLocalStorage(cart.id);
+        console.log(`ID del carrito actualizado en localStorage: ${cart.id}`);
       }
       
       return normalizeCartData(cart);
     } catch (error) {
       console.error('Error al obtener el carrito:', error);
-      
-      // Intentar usar el ID del carrito guardado en localStorage como fallback
-      const cartIdFromStorage = getCartIdFromLocalStorage();
-      if (cartIdFromStorage) {
-        console.log(`Intentando recuperar carrito por ID desde localStorage: ${cartIdFromStorage}`);
-        try {
-          // Incluir el ID del carrito de localStorage como parámetro de consulta
-          const fallbackResponse = await apiClient.get(getApiUrl(`cart?cart_id=${cartIdFromStorage}`));
-          return normalizeCartData(fallbackResponse.data);
-        } catch (fallbackError) {
-          console.error('Error al recuperar carrito con ID de localStorage:', fallbackError);
-        }
-      }
-      
-      // Simular respuesta en modo desarrollo
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Simulando respuesta del carrito en modo desarrollo');
-        return normalizeCartData({
-          id: 1,
-          user_id: null,
-          created_at: new Date().toISOString(),
-          items: []
-        });
-      }
       throw error;
     }
   },
@@ -129,7 +111,6 @@ export const CartApi = {
    */
   addToCart: async (request: AddToCartRequest): Promise<{ cart_item_id: number }> => {
     try {
-      // Ajustar la estructura para adaptarse a lo que espera el backend
       const requestBody = {
         product_id: request.product_id,
         selected_options: request.selected_options,
@@ -138,62 +119,32 @@ export const CartApi = {
       
       console.log('---- INICIANDO AÑADIR AL CARRITO ----');
       console.log('Datos a enviar al carrito:', requestBody);
-      console.log('Estado de las cookies antes de la solicitud:', document.cookie);
       
-      // Obtener el ID del carrito de localStorage como respaldo
+      // Obtener el ID del carrito de localStorage
       const cartIdFromStorage = getCartIdFromLocalStorage();
-      let url = 'cart/items';
-      let params = {};
+      console.log('ID del carrito en localStorage:', cartIdFromStorage);
       
-      // Si tenemos un ID del carrito en localStorage, lo añadimos como parámetro de consulta
-      if (cartIdFromStorage) {
-        params = { cart_id: cartIdFromStorage };
-        console.log(`Añadiendo ID del carrito como parámetro: ${cartIdFromStorage}`);
-      } else {
-        console.log('No se encontró ID del carrito en localStorage');
-      }
-      
-      console.log(`Enviando solicitud POST a: ${getApiUrl(url)}`);
-      const response = await apiClient.post(getApiUrl(url), requestBody, { params });
+      // Realizar la solicitud incluyendo el query_cart_id como parámetro si existe
+      const response = await apiClient.post(
+        getApiUrl('cart/items'),
+        requestBody,
+        {
+          params: cartIdFromStorage ? { query_cart_id: cartIdFromStorage } : undefined
+        }
+      );
       
       console.log('Respuesta de añadir al carrito:', response.data);
-      console.log('Estado de las cookies después de la solicitud:', document.cookie);
       
-      // Guardar el ID del carrito si está presente en la respuesta
+      // Si la respuesta incluye un nuevo ID de carrito, actualizarlo en localStorage
       if (response.data && response.data.cart_id) {
-        console.log(`Guardando ID del carrito desde la respuesta: ${response.data.cart_id}`);
         saveCartIdToLocalStorage(response.data.cart_id);
+        console.log(`ID del carrito actualizado en localStorage: ${response.data.cart_id}`);
       }
       
       console.log('---- FINALIZADO AÑADIR AL CARRITO ----');
       return response.data;
-    } catch (error: any) {
-      console.error('---- ERROR EN AÑADIR AL CARRITO ----');
-      console.error('Error detallado:', error);
-      
-      if (error.response) {
-        console.error('Datos de respuesta de error:', error.response.data);
-        console.error('Estado HTTP:', error.response.status);
-        console.error('Encabezados:', error.response.headers);
-      } else if (error.request) {
-        console.error('No se recibió respuesta a la solicitud');
-        console.error('Detalles de la solicitud:', error.request);
-      } else {
-        console.error('Error durante la configuración de la solicitud:', error.message);
-      }
-      
-      console.error('Estado de las cookies después del error:', document.cookie);
-      
-      // Simular respuesta en modo desarrollo
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Simulando respuesta de añadir al carrito en modo desarrollo');
-        const mockItemId = Math.floor(Math.random() * 1000) + 1;
-        console.log(`ID de ítem simulado: ${mockItemId}`);
-        return {
-          cart_item_id: mockItemId
-        };
-      }
-      
+    } catch (error) {
+      console.error('Error al añadir al carrito:', error);
       throw error;
     }
   },

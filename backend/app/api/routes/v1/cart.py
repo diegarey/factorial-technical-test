@@ -20,62 +20,41 @@ def get_cart(
     Obtiene o crea un carrito.
     Acepta el ID del carrito ya sea de la cookie o como parámetro de consulta.
     """
-    # Usar cart_id de la cookie o del parámetro de consulta
-    cart_id_to_use = cart_id
-    source = "cookie"
+    # Debug para ver qué valores están llegando
+    print(f"DEBUG - get_cart - Headers: {query_cart_id}, Cookie cart_id: {cart_id}")
     
-    # Si no hay ID en la cookie pero sí en el parámetro de consulta, usar ese
-    if (not cart_id or cart_id == "undefined") and query_cart_id:
-        cart_id_to_use = query_cart_id
-        source = "query param"
+    # Usar cart_id de la cookie o del parámetro de consulta
+    cart_id_to_use = cart_id if cart_id and cart_id != "undefined" else query_cart_id
+    source = "cookie" if cart_id and cart_id != "undefined" else "query param" if query_cart_id else None
     
     print(f"Obteniendo carrito - cookie cart_id: {cart_id}, query cart_id: {query_cart_id}, usando: {cart_id_to_use} de {source}")
     
-    # Si hay un ID de carrito, buscar ese carrito
+    db_cart = None
     if cart_id_to_use:
         try:
             cart_id_int = int(cart_id_to_use)
             db_cart = cart_service.get_cart(db, cart_id_int)
             if db_cart:
                 print(f"Carrito encontrado con ID: {cart_id_int}")
-                # Asegurar que la cookie esté establecida incluso si usamos el parámetro de consulta
-                response.set_cookie(
-                    key="cart_id", 
-                    value=str(db_cart.id), 
-                    max_age=30*24*60*60,
-                    httponly=False,
-                    samesite="lax",
-                    secure=False,
-                    path="/"
-                )
-                return db_cart
-            else:
-                print(f"No se encontró carrito con ID: {cart_id_int}")
         except (ValueError, TypeError) as e:
             print(f"Error al convertir cart_id: {cart_id_to_use} a entero: {e}")
-    else:
-        print("No se recibió cart_id válido ni de cookie ni de query param")
     
-    # Si hay un ID de usuario, buscar o crear un carrito para ese usuario
-    if user_id:
+    # Si no se encontró carrito, crear uno nuevo
+    if not db_cart:
         db_cart = cart_service.get_or_create_cart(db, user_id)
-        print(f"Carrito obtenido/creado para usuario {user_id}: {db_cart.id}")
-    else:
-        # Si no hay ni ID de carrito ni ID de usuario, crear un carrito nuevo
-        db_cart = cart_service.get_or_create_cart(db)
-        print(f"Nuevo carrito creado: {db_cart.id}")
+        print(f"Nuevo carrito creado con ID: {db_cart.id}")
     
-    # Establecer cookie con el ID del carrito
+    # Siempre establecer la cookie con el ID del carrito actual
     response.set_cookie(
-        key="cart_id", 
-        value=str(db_cart.id), 
-        max_age=30*24*60*60,
+        key="cart_id",
+        value=str(db_cart.id),
+        max_age=30*24*60*60,  # 30 días
         httponly=False,
-        samesite="lax",
-        secure=False,
+        samesite="none",  # Para permitir acceso cross-origin
+        secure=True,      # Requerido cuando samesite=none
         path="/"
     )
-    print(f"Cookie cart_id establecida: {db_cart.id}, modo lax")
+    print(f"Cookie cart_id establecida: {db_cart.id} con SameSite=None")
     
     return db_cart
 
@@ -92,15 +71,13 @@ def add_to_cart(
     Añade un producto al carrito con las opciones seleccionadas.
     Acepta el ID del carrito ya sea de la cookie o como parámetro de consulta.
     """
-    # Usar cart_id de la cookie o del parámetro de consulta
-    cart_id_to_use = cart_id
-    source = "cookie"
+    # Debug para ver qué valores están llegando
+    print(f"DEBUG - add_to_cart - Headers: {query_cart_id}, Cookie cart_id: {cart_id}")
     
-    # Si no hay ID en la cookie pero sí en el parámetro de consulta, usar ese
-    if (not cart_id or cart_id == "undefined") and query_cart_id:
-        cart_id_to_use = query_cart_id
-        source = "query param"
-        
+    # Usar cart_id de la cookie o del parámetro de consulta
+    cart_id_to_use = cart_id if cart_id and cart_id != "undefined" else query_cart_id
+    source = "cookie" if cart_id and cart_id != "undefined" else "query param" if query_cart_id else None
+    
     print(f"Añadiendo al carrito - cookie cart_id: {cart_id}, query cart_id: {query_cart_id}, usando: {cart_id_to_use} de {source}")
     
     # Validar compatibilidad de opciones
@@ -123,37 +100,41 @@ def add_to_cart(
         try:
             cart_id_int = int(cart_id_to_use)
             db_cart = cart_service.get_cart(db, cart_id_int)
-            print(f"Carrito encontrado con ID: {cart_id_int}")
+            if db_cart:
+                print(f"Carrito encontrado con ID: {cart_id_int}")
         except (ValueError, TypeError) as e:
             print(f"Error al convertir cart_id: {cart_id_to_use} a entero: {e}")
-            db_cart = None
     
     if not db_cart:
         db_cart = cart_service.get_or_create_cart(db, user_id)
         print(f"Nuevo carrito creado con ID: {db_cart.id}")
     
-    # Establecer cookie con el ID del carrito con la misma configuración que get_cart
+    # Siempre establecer la cookie con el ID del carrito actual
     response.set_cookie(
-        key="cart_id", 
-        value=str(db_cart.id), 
-        max_age=30*24*60*60,
+        key="cart_id",
+        value=str(db_cart.id),
+        max_age=30*24*60*60,  # 30 días
         httponly=False,
-        samesite="lax",
-        secure=False,
+        samesite="none",  # Para permitir acceso cross-origin
+        secure=True,      # Requerido cuando samesite=none
         path="/"
     )
-    print(f"Cookie cart_id establecida: {db_cart.id}, modo lax")
+    print(f"Cookie cart_id establecida: {db_cart.id} con SameSite=None")
     
     # Añadir producto al carrito
     try:
         cart_item = cart_service.add_to_cart(
-            db, 
-            db_cart.id, 
-            request.product_id, 
-            request.selected_options, 
+            db,
+            db_cart.id,
+            request.product_id,
+            request.selected_options,
             request.quantity
         )
-        result = {"message": "Producto añadido al carrito", "cart_item_id": cart_item.id, "cart_id": db_cart.id}
+        result = {
+            "message": "Producto añadido al carrito",
+            "cart_item_id": cart_item.id,
+            "cart_id": db_cart.id
+        }
         print(f"Producto añadido con éxito: {result}")
         return result
     except ValueError as e:
