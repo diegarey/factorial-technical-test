@@ -392,31 +392,11 @@ export default function CartPage() {
                   </div>
                   
                   {/* Tercera fila: controles de cantidad y botón eliminar */}
-                  <div className="flex justify-between items-center pt-2">
-                    <div className="flex items-center bg-white rounded-lg border border-gray-200 overflow-hidden" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-                      <button 
-                        onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
-                        className="px-3 py-1.5 text-gray-600 font-bold hover:bg-gray-50 transition-colors"
-                        disabled={item.quantity <= 1}
-                        style={{ transition: styles.buttonTransition }}
-                      >
-                        −
-                      </button>
-                      <span className="px-4 py-1.5 border-x border-gray-200 font-medium text-gray-800 min-w-[40px] text-center">
-                        {item.quantity}
-                      </span>
-                      <button 
-                        onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
-                        className="px-3 py-1.5 text-gray-600 font-bold hover:bg-gray-50 transition-colors"
-                        style={{ transition: styles.buttonTransition }}
-                      >
-                        +
-                      </button>
-                    </div>
+                  <div className="flex justify-end items-center pt-2">
                     
                     <button 
                       onClick={() => handleRemoveItem(item.id)}
-                      className="flex items-center py-1.5 px-3 rounded-lg transition-colors"
+                      className="flex items-center py-1.5 px-3 rounded-lg transition-colors ml-auto"
                       style={{ 
                         color: '#ff3b30', 
                         transition: styles.buttonTransition 
