@@ -9,13 +9,17 @@ import Image from 'next/image';
 
 // Componente para editar un tipo de parte
 const PartTypeEditor = ({ 
-  partType, 
+  partType,
+  partTypeIndex, 
   onChange, 
-  onDelete 
+  onDelete,
+  onDeleteOption 
 }: { 
-  partType: PartType, 
+  partType: PartType,
+  partTypeIndex: number,
   onChange: (updatedPartType: PartType) => void, 
-  onDelete: () => void 
+  onDelete: () => void,
+  onDeleteOption: (partTypeIndex: number, optionIndex: number) => Promise<void>
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [name, setName] = useState(partType.name);
@@ -38,13 +42,8 @@ const PartTypeEditor = ({
     });
   };
 
-  const handleDeleteOption = (index: number) => {
-    const updatedOptions = [...partType.options];
-    updatedOptions.splice(index, 1);
-    onChange({
-      ...partType,
-      options: updatedOptions
-    });
+  const handleDeleteOptionClick = async (optionIndex: number) => {
+    await onDeleteOption(partTypeIndex, optionIndex);
   };
 
   const handleAddOption = () => {
@@ -53,7 +52,7 @@ const PartTypeEditor = ({
       name: 'Nueva opción',
       base_price: 0,
       part_type_id: partType.id,
-      in_stock: true // Asegurarnos de que este campo está presente
+      in_stock: true
     };
     onChange({
       ...partType,
@@ -136,7 +135,7 @@ const PartTypeEditor = ({
                     />
                   </div>
                   <button 
-                    onClick={() => handleDeleteOption(index)}
+                    onClick={() => handleDeleteOptionClick(index)}
                     className="text-red-500 hover:text-red-700"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -231,16 +230,60 @@ export default function EditProductPage({ params }: PageProps) {
     });
   };
 
-  const handleDeletePartType = (index: number) => {
+  const handleDeletePartType = async (index: number) => {
     if (!product) return;
     
-    const updatedPartTypes = [...product.partTypes];
-    updatedPartTypes.splice(index, 1);
+    const partType = product.partTypes[index];
     
-    setProduct({
-      ...product,
-      partTypes: updatedPartTypes
-    });
+    try {
+      // Si el tipo de parte tiene un ID positivo (existe en el backend), eliminarlo
+      if (partType.id > 0) {
+        await ProductsApi.deletePartType(partType.id);
+      }
+      
+      // Actualizar el estado local
+      const updatedPartTypes = [...product.partTypes];
+      updatedPartTypes.splice(index, 1);
+      
+      setProduct({
+        ...product,
+        partTypes: updatedPartTypes
+      });
+    } catch (error) {
+      console.error('Error al eliminar el tipo de parte:', error);
+      setError('No se pudo eliminar el componente. Por favor, intenta nuevamente.');
+    }
+  };
+
+  const handleDeleteOption = async (partTypeIndex: number, optionIndex: number) => {
+    if (!product) return;
+    
+    const partType = product.partTypes[partTypeIndex];
+    const option = partType.options[optionIndex];
+    
+    try {
+      // Si la opción tiene un ID positivo (existe en el backend), eliminarla
+      if (option.id > 0) {
+        await ProductsApi.deletePartOption(partType.id, option.id);
+      }
+      
+      // Actualizar el estado local
+      const updatedPartTypes = [...product.partTypes];
+      const updatedOptions = [...updatedPartTypes[partTypeIndex].options];
+      updatedOptions.splice(optionIndex, 1);
+      updatedPartTypes[partTypeIndex] = {
+        ...updatedPartTypes[partTypeIndex],
+        options: updatedOptions
+      };
+      
+      setProduct({
+        ...product,
+        partTypes: updatedPartTypes
+      });
+    } catch (error) {
+      console.error('Error al eliminar la opción:', error);
+      setError('No se pudo eliminar la opción. Por favor, intenta nuevamente.');
+    }
   };
 
   const handleAddPartType = () => {
@@ -281,7 +324,10 @@ export default function EditProductPage({ params }: PageProps) {
       const updatedProduct = await ProductsApi.updateProduct(productId, productData);
       
       // Manejar tipos de partes y opciones
-      for (const partType of product.partTypes) {
+      const updatedPartTypes = [...product.partTypes];
+      
+      for (let i = 0; i < updatedPartTypes.length; i++) {
+        const partType = updatedPartTypes[i];
         let currentPartTypeId = partType.id;
         
         // Si es un nuevo tipo de parte (ID negativo)
@@ -292,26 +338,56 @@ export default function EditProductPage({ params }: PageProps) {
           };
           const savedPartType = await ProductsApi.addPartType(productId, newPartType);
           currentPartTypeId = savedPartType.id;
+          
+          // Actualizar el ID en el estado local
+          updatedPartTypes[i] = {
+            ...partType,
+            id: currentPartTypeId
+          };
         }
         
         // Guardar las opciones nuevas (con ID negativo) para este tipo de parte
-        for (const option of partType.options) {
+        const updatedOptions = [...partType.options];
+        
+        for (let j = 0; j < updatedOptions.length; j++) {
+          const option = updatedOptions[j];
           if (option.id < 0) {
             const newOption = {
               name: option.name,
               base_price: option.base_price,
               in_stock: option.in_stock !== false
             };
-            await ProductsApi.addPartOption(currentPartTypeId, newOption);
+            const savedOption = await ProductsApi.addPartOption(currentPartTypeId, newOption);
+            
+            // Actualizar el ID en el estado local
+            updatedOptions[j] = {
+              ...option,
+              id: savedOption.id,
+              part_type_id: currentPartTypeId
+            };
           }
         }
+        
+        // Actualizar las opciones en el tipo de parte
+        updatedPartTypes[i] = {
+          ...updatedPartTypes[i],
+          options: updatedOptions
+        };
       }
       
+      // Actualizar el estado local con los nuevos IDs
+      setProduct({
+        ...product,
+        partTypes: updatedPartTypes
+      });
+      
       alert('Producto actualizado correctamente');
-      loadProduct(); // Recargar datos
+      
+      // Recargar el producto para asegurarnos de tener los datos más recientes
+      await loadProduct();
     } catch (error) {
-      console.error('Error al guardar el producto:', error);
-      setError('Ocurrió un error al guardar los cambios. Por favor, intenta nuevamente.');
+      console.error('Error al guardar los cambios:', error);
+      setError('No se pudieron guardar los cambios. Por favor, intenta nuevamente.');
     } finally {
       setSaving(false);
     }
@@ -511,8 +587,10 @@ export default function EditProductPage({ params }: PageProps) {
                   <PartTypeEditor
                     key={partType.id}
                     partType={partType}
+                    partTypeIndex={index}
                     onChange={(updatedPartType) => handlePartTypeChange(index, updatedPartType)}
                     onDelete={() => handleDeletePartType(index)}
+                    onDeleteOption={handleDeleteOption}
                   />
                 ))}
               </div>

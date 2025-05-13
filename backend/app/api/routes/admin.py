@@ -65,4 +65,20 @@ def update_option_stock(option_id: int, in_stock: bool, db: Session = Depends(ge
     option.in_stock = in_stock
     db.commit()
     db.refresh(option)
-    return {"message": f"Stock actualizado para {option.name}", "in_stock": option.in_stock} 
+    return {"message": f"Stock actualizado para {option.name}", "in_stock": option.in_stock}
+
+@router.delete("/admin/part-types/{part_type_id}", status_code=204)
+def delete_part_type(part_type_id: int, db: Session = Depends(get_db)):
+    """
+    Elimina un tipo de parte y todas sus opciones asociadas.
+    """
+    product_service.delete_part_type(db=db, part_type_id=part_type_id)
+    return {"message": "Tipo de parte eliminado correctamente"}
+
+@router.delete("/admin/part-types/{part_type_id}/options/{option_id}", status_code=204)
+def delete_part_option(part_type_id: int, option_id: int, db: Session = Depends(get_db)):
+    """
+    Elimina una opción de un tipo de parte.
+    """
+    product_service.delete_part_option(db=db, part_type_id=part_type_id, option_id=option_id)
+    return {"message": "Opción eliminada correctamente"} 

@@ -10,6 +10,7 @@ from app.schemas.product import (
     OptionDependency, OptionDependencyCreate,
     ConditionalPrice, ConditionalPriceCreate
 )
+from app.models.product import PartOption as PartOptionModel
 
 router = APIRouter()
 
@@ -58,11 +59,39 @@ def update_option_stock(option_id: int, in_stock: bool, db: Session = Depends(ge
     """
     Actualiza el estado de stock de una opción.
     """
-    option = db.query(PartOption).filter(PartOption.id == option_id).first()
+    option = db.query(PartOptionModel).filter(PartOptionModel.id == option_id).first()
     if not option:
         raise HTTPException(status_code=404, detail="Opción no encontrada")
     
     option.in_stock = in_stock
     db.commit()
     db.refresh(option)
-    return {"message": f"Stock actualizado para {option.name}", "in_stock": option.in_stock} 
+    return {"message": f"Stock actualizado para {option.name}", "in_stock": option.in_stock}
+
+@router.delete("/admin/part-types/{part_type_id}", status_code=204)
+def delete_part_type(part_type_id: int, db: Session = Depends(get_db)):
+    """
+    Elimina un tipo de parte y todas sus opciones asociadas.
+    """
+    try:
+        product_service.delete_part_type(db, part_type_id=part_type_id)
+        return None
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        print(f"Error al eliminar tipo de parte {part_type_id}:", str(e))
+        raise HTTPException(status_code=500, detail=f"Error al eliminar tipo de parte: {str(e)}")
+
+@router.delete("/admin/part-types/{part_type_id}/options/{option_id}", status_code=204)
+def delete_part_option(part_type_id: int, option_id: int, db: Session = Depends(get_db)):
+    """
+    Elimina una opción de un tipo de parte.
+    """
+    try:
+        product_service.delete_part_option(db, part_type_id=part_type_id, option_id=option_id)
+        return None
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        print(f"Error al eliminar opción {option_id} del tipo de parte {part_type_id}:", str(e))
+        raise HTTPException(status_code=500, detail=f"Error al eliminar opción: {str(e)}") 

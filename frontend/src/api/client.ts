@@ -4,6 +4,7 @@ import { API_BASE_URL, API_VERSION } from '../config/api';
 console.log(`Usando API URL: ${API_BASE_URL}, versión: ${API_VERSION}`);
 
 const apiClient = axios.create({
+  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -56,8 +57,9 @@ apiClient.interceptors.response.use(
       console.error('Parámetros enviados:', error.config.params);
     } else if (error.request) {
       // La solicitud se hizo pero no se recibió respuesta
+      const fullUrl = error.config.url;
       console.error('No se recibió respuesta del servidor:', {
-        url: `${error.config.baseURL}${error.config.url}`,
+        url: fullUrl,
         method: error.config.method?.toUpperCase(),
         timeout: error.config.timeout
       });

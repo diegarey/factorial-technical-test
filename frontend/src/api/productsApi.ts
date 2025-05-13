@@ -560,5 +560,31 @@ export const ProductsApi = {
       console.error(`Error al agregar opción al tipo de parte ${partTypeId}:`, error);
       throw error;
     }
+  },
+
+  /**
+   * Elimina un tipo de parte
+   */
+  deletePartType: async (partTypeId: number): Promise<void> => {
+    try {
+      console.log(`Eliminando tipo de parte ${partTypeId}`);
+      await apiClient.delete(getApiUrl(`admin/part-types/${partTypeId}`));
+    } catch (error) {
+      console.error(`Error al eliminar tipo de parte ${partTypeId}:`, error);
+      throw error;
+    }
+  },
+
+  /**
+   * Elimina una opción de un tipo de parte
+   */
+  deletePartOption: async (partTypeId: number, optionId: number): Promise<void> => {
+    try {
+      console.log(`Eliminando opción ${optionId} del tipo de parte ${partTypeId}`);
+      await apiClient.delete(getApiUrl(`admin/part-types/${partTypeId}/options/${optionId}`));
+    } catch (error) {
+      console.error(`Error al eliminar opción ${optionId} del tipo de parte ${partTypeId}:`, error);
+      throw error;
+    }
   }
 }; 

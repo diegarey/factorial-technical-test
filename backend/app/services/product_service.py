@@ -1,9 +1,10 @@
 from sqlalchemy.orm import Session
-from app.models.product import Product, PartType, PartOption, OptionDependency, ConditionalPrice
+from app.models.product import Product, PartType, PartOption, OptionDependency, ConditionalPrice, DependencyType
+from app.models.cart import CartItemOption
 from app.schemas.product import ProductCreate, PartTypeCreate, PartOptionCreate, OptionDependencyCreate, ConditionalPriceCreate
-from typing import List
+from typing import List, Optional
 from decimal import Decimal
-from app.models.product import DependencyType
+from fastapi import HTTPException
 
 def get_product(db: Session, product_id: int):
     return db.query(Product).filter(Product.id == product_id).first()
@@ -222,4 +223,101 @@ def update_product(db: Session, product_id: int, product: ProductCreate):
     
     db.commit()
     db.refresh(db_product)
-    return db_product 
+    return db_product
+
+def delete_part_type(db: Session, part_type_id: int):
+    """
+    Elimina un tipo de parte y todas sus opciones asociadas.
+    Maneja la eliminación de todas las relaciones dependientes.
+    """
+    part_type = db.query(PartType).filter(PartType.id == part_type_id).first()
+    if not part_type:
+        raise HTTPException(status_code=404, detail="Tipo de parte no encontrado")
+    
+    try:
+        # Obtener todas las opciones del tipo de parte
+        options = db.query(PartOption).filter(PartOption.part_type_id == part_type_id).all()
+        
+        for option in options:
+            # Eliminar dependencias y precios condicionales
+            db.query(OptionDependency).filter(
+                (OptionDependency.option_id == option.id) |
+                (OptionDependency.depends_on_option_id == option.id)
+            ).delete(synchronize_session=False)
+            
+            db.query(ConditionalPrice).filter(
+                (ConditionalPrice.option_id == option.id) |
+                (ConditionalPrice.condition_option_id == option.id)
+            ).delete(synchronize_session=False)
+            
+            # Eliminar referencias en el carrito
+            db.query(CartItemOption).filter(
+                CartItemOption.part_option_id == option.id
+            ).delete(synchronize_session=False)
+        
+        # Ahora podemos eliminar el tipo de parte de forma segura
+        db.delete(part_type)
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al eliminar tipo de parte: {str(e)}"
+        )
+
+def delete_part_option(db: Session, part_type_id: int, option_id: int):
+    """
+    Elimina una opción de un tipo de parte.
+    Primero verifica si la opción existe y si pertenece al tipo de parte especificado.
+    También elimina todas las dependencias relacionadas.
+    """
+    # Primero verificar si el tipo de parte existe
+    part_type = db.query(PartType).filter(PartType.id == part_type_id).first()
+    if not part_type:
+        raise HTTPException(status_code=404, detail=f"Tipo de parte {part_type_id} no encontrado")
+
+    # Luego verificar si la opción existe y pertenece a este tipo de parte
+    option = db.query(PartOption).filter(
+        PartOption.id == option_id,
+        PartOption.part_type_id == part_type_id
+    ).first()
+    
+    if not option:
+        raise HTTPException(status_code=404, detail=f"Opción {option_id} no encontrada en el tipo de parte {part_type_id}")
+    
+    try:
+        # Eliminar primero las dependencias y precios condicionales
+        db.query(OptionDependency).filter(
+            (OptionDependency.option_id == option_id) |
+            (OptionDependency.depends_on_option_id == option_id)
+        ).delete(synchronize_session=False)
+        
+        db.query(ConditionalPrice).filter(
+            (ConditionalPrice.option_id == option_id) |
+            (ConditionalPrice.condition_option_id == option_id)
+        ).delete(synchronize_session=False)
+        
+        # Eliminar referencias en el carrito
+        db.query(CartItemOption).filter(
+            CartItemOption.part_option_id == option_id
+        ).delete(synchronize_session=False)
+        
+        # Finalmente eliminar la opción
+        db.delete(option)
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al eliminar la opción: {str(e)}"
+        )
+
+def delete_product(db: Session, product_id: int) -> None:
+    """
+    Elimina un producto y todos sus componentes asociados.
+    """
+    product = db.query(Product).filter(Product.id == product_id).first()
+    if product:
+        db.delete(product)
+        db.commit()
+    return None 

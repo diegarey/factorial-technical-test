@@ -144,4 +144,23 @@ def update_product(product_id: int, product: ProductCreate, db: Session = Depend
         return updated_product
     except Exception as e:
         print(f"Error al actualizar producto {product_id}:", str(e))
-        raise HTTPException(status_code=400, detail=f"Error al actualizar producto: {str(e)}") 
+        raise HTTPException(status_code=400, detail=f"Error al actualizar producto: {str(e)}")
+
+@router.delete("/products/{product_id}", status_code=204)
+def delete_product(product_id: int, db: Session = Depends(get_db)):
+    """
+    Elimina un producto existente y todos sus componentes asociados.
+    """
+    try:
+        # Verificar si el producto existe
+        db_product = product_service.get_product(db, product_id=product_id)
+        if db_product is None:
+            raise HTTPException(status_code=404, detail="Producto no encontrado")
+            
+        # Eliminar el producto
+        product_service.delete_product(db, product_id=product_id)
+        
+        return None
+    except Exception as e:
+        print(f"Error al eliminar producto {product_id}:", str(e))
+        raise HTTPException(status_code=400, detail=f"Error al eliminar producto: {str(e)}") 
