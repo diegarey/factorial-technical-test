@@ -586,5 +586,69 @@ export const ProductsApi = {
       console.error(`Error al eliminar opción ${optionId} del tipo de parte ${partTypeId}:`, error);
       throw error;
     }
-  }
+  },
+
+  /**
+   * Obtiene las dependencias de un producto
+   */
+  getProductDependencies: async (productId: number) => {
+    try {
+      console.log(`Solicitando dependencias para el producto ${productId}`);
+      const response = await apiClient.get(getApiUrl(`api/v1/admin/products/${productId}/dependencies`));
+      console.log('Respuesta de dependencias:', response.data);
+      
+      // Verificar que la respuesta sea un array
+      if (!Array.isArray(response.data)) {
+        console.error('La respuesta de dependencias no es un array:', response.data);
+        return [];
+      }
+      
+      // Transformar los datos si es necesario
+      const dependencies = response.data.map(dep => ({
+        id: dep.id,
+        optionId: dep.option_id,
+        dependsOnOptionId: dep.depends_on_option_id,
+        type: dep.type
+      }));
+      
+      console.log('Dependencias transformadas:', dependencies);
+      return dependencies;
+    } catch (error) {
+      console.error('Error al obtener dependencias:', error);
+      // En caso de error, devolver un array vacío para no romper la UI
+      return [];
+    }
+  },
+
+  /**
+   * Crea una nueva dependencia entre opciones
+   */
+  createDependency: async (productId: number, dependency: {
+    optionId: number;
+    dependsOnOptionId: number;
+    type: 'requires' | 'excludes';
+  }) => {
+    try {
+      const response = await apiClient.post(
+        getApiUrl(`admin/products/${productId}/dependencies`),
+        dependency
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error al crear dependencia:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Elimina una dependencia
+   */
+  deleteDependency: async (dependencyId: number) => {
+    try {
+      await apiClient.delete(getApiUrl(`admin/dependencies/${dependencyId}`));
+    } catch (error) {
+      console.error('Error al eliminar dependencia:', error);
+      throw error;
+    }
+  },
 }; 

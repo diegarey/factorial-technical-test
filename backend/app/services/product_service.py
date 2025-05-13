@@ -320,4 +320,32 @@ def delete_product(db: Session, product_id: int) -> None:
     if product:
         db.delete(product)
         db.commit()
-    return None 
+    return None
+
+def get_product_dependencies(db: Session, product_id: int) -> List[OptionDependency]:
+    """
+    Obtiene todas las dependencias de las opciones de un producto.
+    """
+    print(f"Buscando dependencias para el producto {product_id}")
+    
+    # Obtener todas las opciones del producto
+    part_types = db.query(PartType).filter(PartType.product_id == product_id).all()
+    print(f"Tipos de parte encontrados: {len(part_types)}")
+    
+    option_ids = []
+    for part_type in part_types:
+        options = db.query(PartOption).filter(PartOption.part_type_id == part_type.id).all()
+        option_ids.extend([option.id for option in options])
+    
+    print(f"IDs de opciones encontradas: {option_ids}")
+    
+    # Obtener todas las dependencias donde la opción principal está en las opciones del producto
+    dependencies = db.query(OptionDependency).filter(
+        OptionDependency.option_id.in_(option_ids)
+    ).all()
+    
+    print(f"Dependencias encontradas: {len(dependencies)}")
+    for dep in dependencies:
+        print(f"Dependencia: opción {dep.option_id} {dep.type.value} opción {dep.depends_on_option_id}")
+    
+    return dependencies 

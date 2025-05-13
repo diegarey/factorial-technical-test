@@ -94,4 +94,11 @@ def delete_part_option(part_type_id: int, option_id: int, db: Session = Depends(
         raise e
     except Exception as e:
         print(f"Error al eliminar opción {option_id} del tipo de parte {part_type_id}:", str(e))
-        raise HTTPException(status_code=500, detail=f"Error al eliminar opción: {str(e)}") 
+        raise HTTPException(status_code=500, detail=f"Error al eliminar opción: {str(e)}")
+
+@router.get("/admin/products/{product_id}/dependencies", response_model=List[OptionDependency])
+def get_product_dependencies(product_id: int, db: Session = Depends(get_db)):
+    """
+    Obtiene todas las dependencias de un producto.
+    """
+    return product_service.get_product_dependencies(db=db, product_id=product_id) 

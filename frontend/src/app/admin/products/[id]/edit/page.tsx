@@ -6,6 +6,7 @@ import { ProductsApi } from '@/api/productsApi';
 import { Product, PartType, PartOption } from '@/types/product';
 import Link from 'next/link';
 import Image from 'next/image';
+import DependencyEditor from '@/components/DependencyEditor';
 
 // Componente para editar un tipo de parte
 const PartTypeEditor = ({ 
@@ -166,9 +167,16 @@ export default function EditProductPage({ params }: PageProps) {
   const [loading, setLoading] = useState<boolean>(true);
   const [saving, setSaving] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [dependencies, setDependencies] = useState<Array<{
+    id: number;
+    optionId: number;
+    dependsOnOptionId: number;
+    type: 'requires' | 'excludes';
+  }>>([]);
 
   useEffect(() => {
     loadProduct();
+    loadDependencies();
   }, []);
 
   const loadProduct = async () => {
@@ -186,6 +194,30 @@ export default function EditProductPage({ params }: PageProps) {
       setError('No se pudo cargar el producto. Por favor, intenta nuevamente.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadDependencies = async () => {
+    if (isNaN(productId)) {
+      console.error('ID de producto inválido para cargar dependencias');
+      return;
+    }
+
+    try {
+      console.log('Iniciando carga de dependencias para producto:', productId);
+      const deps = await ProductsApi.getProductDependencies(productId);
+      console.log('Dependencias cargadas:', deps);
+      
+      if (Array.isArray(deps)) {
+        setDependencies(deps);
+      } else {
+        console.error('Las dependencias recibidas no son un array:', deps);
+        setDependencies([]);
+      }
+    } catch (error) {
+      console.error('Error al cargar dependencias:', error);
+      setError('No se pudieron cargar las dependencias. Por favor, intenta nuevamente.');
+      setDependencies([]);
     }
   };
 
@@ -390,6 +422,30 @@ export default function EditProductPage({ params }: PageProps) {
       setError('No se pudieron guardar los cambios. Por favor, intenta nuevamente.');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleSaveDependency = async (dependency: {
+    optionId: number;
+    dependsOnOptionId: number;
+    type: 'requires' | 'excludes';
+  }) => {
+    try {
+      const newDependency = await ProductsApi.createDependency(productId, dependency);
+      setDependencies([...dependencies, newDependency]);
+    } catch (error) {
+      console.error('Error al guardar dependencia:', error);
+      setError('No se pudo guardar la dependencia. Por favor, intenta nuevamente.');
+    }
+  };
+
+  const handleRemoveDependency = async (dependencyId: number) => {
+    try {
+      await ProductsApi.deleteDependency(dependencyId);
+      setDependencies(dependencies.filter(dep => dep.id !== dependencyId));
+    } catch (error) {
+      console.error('Error al eliminar dependencia:', error);
+      setError('No se pudo eliminar la dependencia. Por favor, intenta nuevamente.');
     }
   };
 
@@ -673,6 +729,18 @@ export default function EditProductPage({ params }: PageProps) {
           </div>
         </div>
       </div>
+
+      {/* Añadir el editor de dependencias después de la sección de componentes */}
+      {product && product.partTypes && product.partTypes.length > 0 && (
+        <div className="mt-8">
+          <DependencyEditor
+            partTypes={product.partTypes}
+            currentDependencies={dependencies}
+            onSaveDependency={handleSaveDependency}
+            onRemoveDependency={handleRemoveDependency}
+          />
+        </div>
+      )}
     </div>
   );
 } 
