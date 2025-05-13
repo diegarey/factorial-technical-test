@@ -450,25 +450,6 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
                 </div>
               </div>
               
-              {/* Navegación rápida entre secciones */}
-              <div className="mt-6 pt-4 border-t border-gray-100">
-                <p className="text-sm font-medium text-gray-500 mb-3">NAVEGA POR SECCIONES:</p>
-                <div className="flex flex-wrap gap-2">
-                  {partTypesToRender.map((partType) => (
-                    <button
-                      key={`nav-${partType.id}`}
-                      onClick={() => scrollToSection(partType.id)}
-                      className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
-                        selectedOptions[partType.id]
-                          ? 'bg-green-100 text-green-700 font-medium'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
-                    >
-                      {partType.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
             </div>
 
             {/* Secciones de selección de componentes */}
@@ -480,22 +461,13 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
               } p-6`}>
                 <div className="flex items-center mb-4">
                   <h2 className="text-xl font-bold text-gray-800">{partType.name}</h2>
-                  {/* Indicador de selección */}
-                  {selectedOptions[partType.id] ? (
-                    <span className="ml-auto px-3 py-1 bg-green-50 text-green-600 text-xs font-medium rounded-full">
-                      Seleccionado
-                    </span>
-                  ) : (
-                    <span className="ml-auto px-3 py-1 bg-amber-50 text-amber-600 text-xs font-medium rounded-full">
-                      Pendiente
-                    </span>
-                  )}
                 </div>
                 
                 {partType.options && partType.options.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {partType.options.map((option) => {
-                      const isIncompatible = option.is_compatible === false;
+                      // Solo mostrar incompatibilidad si hay al menos una selección previa
+                      const isIncompatible = option.is_compatible === false && Object.keys(selectedOptions).length > 0;
                       const isSelected = selectedOptions[partType.id] === option.id;
                       
                       return (
