@@ -4,7 +4,6 @@ import { API_BASE_URL, API_VERSION } from '../config/api';
 console.log(`Usando API URL: ${API_BASE_URL}, versión: ${API_VERSION}`);
 
 const apiClient = axios.create({
-  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -20,7 +19,7 @@ apiClient.interceptors.request.use(
       method: config.method?.toUpperCase(),
       url: config.url,
       baseURL: config.baseURL,
-      fullUrl: `${config.baseURL}${config.url}`,
+      fullUrl: config.url, // La URL ya es completa
       params: config.params,
       data: config.data,
       headers: config.headers,

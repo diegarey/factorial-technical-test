@@ -25,9 +25,6 @@ export const API_DOCUMENTATION_URL = '/docs';
 export const getApiUrl = (endpoint: string): string => {
   const normalizedEndpoint = endpoint.startsWith('/') ? endpoint.substring(1) : endpoint;
   
-  if (USE_VERSIONED_ENDPOINTS) {
-    return `/api/${API_VERSION}/${normalizedEndpoint}`;
-  } else {
-    return `/api/${normalizedEndpoint}`;
-  }
+  // Generar URL absoluta que incluya el dominio del backend
+  return `${API_BASE_URL}/api/${API_VERSION}/${normalizedEndpoint}`;
 }; 

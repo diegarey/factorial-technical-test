@@ -45,7 +45,6 @@ export interface Product {
   image_url?: string;
   is_active?: boolean;
   featured?: boolean;
-  part_types?: PartType[];
   partTypes: PartType[];
 }
 

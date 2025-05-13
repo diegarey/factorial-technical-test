@@ -205,4 +205,21 @@ def get_available_options(db: Session, product_id: int, current_selection: List[
             
         result.append(part_type_data)
         
-    return result 
+    return result
+
+def update_product(db: Session, product_id: int, product: ProductCreate):
+    """
+    Actualiza un producto existente.
+    """
+    db_product = db.query(Product).filter(Product.id == product_id).first()
+    if not db_product:
+        return None
+    
+    # Actualizar los campos del producto
+    product_data = product.dict(exclude_unset=True)
+    for key, value in product_data.items():
+        setattr(db_product, key, value)
+    
+    db.commit()
+    db.refresh(db_product)
+    return db_product 

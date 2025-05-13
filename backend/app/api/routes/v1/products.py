@@ -31,6 +31,24 @@ def read_products(
         "total": total
     }
 
+@router.post("/products/", response_model=Product)
+def create_product(product: ProductCreate, db: Session = Depends(get_db)):
+    """
+    Crea un nuevo producto.
+    """
+    try:
+        # Imprimir los datos que recibimos para depuración
+        print("Creando producto con datos:", product)
+        
+        # Llamar al servicio para crear el producto
+        db_product = product_service.create_product(db, product)
+        print("Producto creado:", db_product)
+        
+        return db_product
+    except Exception as e:
+        print("Error al crear producto:", str(e))
+        raise HTTPException(status_code=400, detail=f"Error al crear producto: {str(e)}")
+
 @router.get("/products/featured", response_model=List[Product])
 def read_featured_products(
     limit: int = Query(3, description="Número de productos destacados a retornar"),
@@ -103,4 +121,27 @@ def calculate_price(request: dict, db: Session = Depends(get_db)):
     
     total_price = product_service.calculate_price(db, selected_options)
     print(f"Precio adicional total: {total_price}")
-    return {"total_price": total_price} 
+    return {"total_price": total_price}
+
+@router.put("/products/{product_id}", response_model=Product)
+def update_product(product_id: int, product: ProductCreate, db: Session = Depends(get_db)):
+    """
+    Actualiza un producto existente.
+    """
+    try:
+        # Verificar si el producto existe
+        db_product = product_service.get_product(db, product_id=product_id)
+        if db_product is None:
+            raise HTTPException(status_code=404, detail="Producto no encontrado")
+            
+        # Imprimir los datos que recibimos para depuración
+        print(f"Actualizando producto {product_id} con datos:", product)
+        
+        # Actualizar el producto
+        updated_product = product_service.update_product(db, product_id=product_id, product=product)
+        print(f"Producto {product_id} actualizado:", updated_product)
+        
+        return updated_product
+    except Exception as e:
+        print(f"Error al actualizar producto {product_id}:", str(e))
+        raise HTTPException(status_code=400, detail=f"Error al actualizar producto: {str(e)}") 
