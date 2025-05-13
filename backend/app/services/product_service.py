@@ -331,10 +331,12 @@ def get_product_dependencies(db: Session, product_id: int) -> List[OptionDepende
     # Obtener todas las opciones del producto
     part_types = db.query(PartType).filter(PartType.product_id == product_id).all()
     print(f"Tipos de parte encontrados: {len(part_types)}")
+    print("Tipos de parte:", [{"id": pt.id, "name": pt.name} for pt in part_types])
     
     option_ids = []
     for part_type in part_types:
         options = db.query(PartOption).filter(PartOption.part_type_id == part_type.id).all()
+        print(f"Opciones encontradas para tipo de parte {part_type.name}:", [{"id": opt.id, "name": opt.name} for opt in options])
         option_ids.extend([option.id for option in options])
     
     print(f"IDs de opciones encontradas: {option_ids}")
@@ -346,6 +348,12 @@ def get_product_dependencies(db: Session, product_id: int) -> List[OptionDepende
     
     print(f"Dependencias encontradas: {len(dependencies)}")
     for dep in dependencies:
-        print(f"Dependencia: opción {dep.option_id} {dep.type.value} opción {dep.depends_on_option_id}")
+        option = db.query(PartOption).filter(PartOption.id == dep.option_id).first()
+        depends_on = db.query(PartOption).filter(PartOption.id == dep.depends_on_option_id).first()
+        print(f"Dependencia: {option.name if option else 'Opción no encontrada'} ({dep.option_id}) {dep.type.value} {depends_on.name if depends_on else 'Opción no encontrada'} ({dep.depends_on_option_id})")
+    
+    # Convertir el tipo de dependencia a string antes de devolverlo
+    for dep in dependencies:
+        dep.type = dep.type.value
     
     return dependencies 

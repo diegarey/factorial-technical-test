@@ -205,10 +205,14 @@ export default function EditProductPage({ params }: PageProps) {
 
     try {
       console.log('Iniciando carga de dependencias para producto:', productId);
+      console.log('Estado actual de dependencies:', dependencies);
+      console.log('Estado actual de product:', product);
+      
       const deps = await ProductsApi.getProductDependencies(productId);
       console.log('Dependencias cargadas:', deps);
       
       if (Array.isArray(deps)) {
+        console.log('Actualizando estado de dependencies con:', deps);
         setDependencies(deps);
       } else {
         console.error('Las dependencias recibidas no son un array:', deps);

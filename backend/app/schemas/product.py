@@ -28,6 +28,12 @@ class OptionDependencyBase(BaseModel):
     depends_on_option_id: int
     type: DependencyType
 
+    class Config:
+        from_attributes = True
+        json_encoders = {
+            DependencyType: lambda v: v.value if isinstance(v, DependencyType) else v
+        }
+
 class ConditionalPriceBase(BaseModel):
     condition_option_id: int
     conditional_price: Decimal

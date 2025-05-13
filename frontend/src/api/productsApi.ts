@@ -594,7 +594,7 @@ export const ProductsApi = {
   getProductDependencies: async (productId: number) => {
     try {
       console.log(`Solicitando dependencias para el producto ${productId}`);
-      const response = await apiClient.get(getApiUrl(`api/v1/admin/products/${productId}/dependencies`));
+      const response = await apiClient.get(getApiUrl(`admin/products/${productId}/dependencies`));
       console.log('Respuesta de dependencias:', response.data);
       
       // Verificar que la respuesta sea un array
