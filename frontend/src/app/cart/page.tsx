@@ -427,6 +427,7 @@ export default function CartPage() {
             </div>
             
             <button
+              onClick={() => window.location.href = '/checkout'}
               className="w-full py-3.5 text-white font-bold rounded-lg shadow-lg transition-all duration-200 flex items-center justify-center"
               style={{
                 backgroundColor: styles.primary,
