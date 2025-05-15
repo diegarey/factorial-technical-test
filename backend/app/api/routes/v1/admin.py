@@ -10,7 +10,7 @@ from app.schemas.product import (
     OptionDependency, OptionDependencyCreate,
     ConditionalPrice, ConditionalPriceCreate
 )
-from app.models.product import PartOption as PartOptionModel
+from app.models.product import PartOption as PartOptionModel, OptionDependency as OptionDependencyModel
 
 router = APIRouter()
 
@@ -45,6 +45,26 @@ def create_option_dependency(option_id: int, dependency: OptionDependencyCreate,
     Añade una dependencia a una opción.
     """
     return product_service.create_option_dependency(db=db, dependency=dependency, option_id=option_id)
+
+@router.post("/admin/products/{product_id}/dependencies", response_model=OptionDependency, status_code=201)
+def create_product_dependency(product_id: int, dependency: dict, db: Session = Depends(get_db)):
+    """
+    Añade una dependencia a través del ID de producto.
+    """
+    # Convertir los nombres de campo del frontend a los esperados por el backend
+    dependency_create = OptionDependencyCreate(
+        depends_on_option_id=dependency["dependsOnOptionId"],
+        type=dependency["type"]
+    )
+    
+    # Crear la dependencia y obtener el resultado
+    result = product_service.create_option_dependency(db=db, dependency=dependency_create, option_id=dependency["optionId"])
+    
+    # Convertir el tipo de dependencia de enum a string para evitar errores de serialización
+    if hasattr(result.type, 'value'):
+        result.type = result.type.value
+    
+    return result
 
 @router.post("/admin/options/{option_id}/conditional-prices", response_model=ConditionalPrice, status_code=201)
 def create_conditional_price(option_id: int, conditional_price: ConditionalPriceCreate, db: Session = Depends(get_db)):
@@ -95,6 +115,28 @@ def delete_part_option(part_type_id: int, option_id: int, db: Session = Depends(
     except Exception as e:
         print(f"Error al eliminar opción {option_id} del tipo de parte {part_type_id}:", str(e))
         raise HTTPException(status_code=500, detail=f"Error al eliminar opción: {str(e)}")
+
+@router.delete("/admin/dependencies/{dependency_id}", status_code=204)
+def delete_dependency(dependency_id: int, db: Session = Depends(get_db)):
+    """
+    Elimina una dependencia entre opciones.
+    """
+    try:
+        # Buscar la dependencia
+        dependency = db.query(OptionDependencyModel).filter(OptionDependencyModel.id == dependency_id).first()
+        
+        if not dependency:
+            raise HTTPException(status_code=404, detail="Dependencia no encontrada")
+        
+        # Eliminar la dependencia
+        db.delete(dependency)
+        db.commit()
+        return None
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        print(f"Error al eliminar dependencia {dependency_id}:", str(e))
+        raise HTTPException(status_code=500, detail=f"Error al eliminar dependencia: {str(e)}")
 
 @router.get("/admin/products/{product_id}/dependencies", response_model=List[OptionDependency])
 def get_product_dependencies(product_id: int, db: Session = Depends(get_db)):

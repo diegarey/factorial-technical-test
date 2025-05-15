@@ -435,7 +435,16 @@ export default function EditProductPage({ params }: PageProps) {
     type: 'requires' | 'excludes';
   }) => {
     try {
-      const newDependency = await ProductsApi.createDependency(productId, dependency);
+      const response = await ProductsApi.createDependency(productId, dependency);
+      
+      // Transformar la respuesta del backend al formato esperado por el frontend
+      const newDependency = {
+        id: response.id,
+        optionId: response.option_id,
+        dependsOnOptionId: response.depends_on_option_id,
+        type: response.type
+      };
+      
       setDependencies([...dependencies, newDependency]);
     } catch (error) {
       console.error('Error al guardar dependencia:', error);
