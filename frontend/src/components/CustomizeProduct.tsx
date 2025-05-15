@@ -254,16 +254,60 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
       console.log("Validando compatibilidad de opciones...");
       const compatibilityResult = await ProductsApi.validateCompatibility(selectedOptionIds, productId);
       
-      if (!compatibilityResult.is_compatible) {
+      console.log("Resultado de compatibilidad completo:", compatibilityResult);
+      
+      // Verificar si alguna opción seleccionada es incompatible
+      let isIncompatible = false;
+      let incompatibilityDetails = null;
+      
+      if (compatibilityResult.product && compatibilityResult.product.components) {
+        // Examinar cada componente y cada opción seleccionada
+        for (const component of compatibilityResult.product.components) {
+          for (const option of component.options) {
+            if (option.selected && option.is_compatible === false) {
+              isIncompatible = true;
+              console.log(`Opción incompatible encontrada: ${option.name} (ID: ${option.id})`);
+              
+              // Capturar detalles de incompatibilidad si existen
+              if (option.compatibility_details) {
+                incompatibilityDetails = {
+                  type: option.compatibility_details.reason,
+                  option_name: option.name,
+                  option_id: option.id,
+                  required_option_name: undefined,
+                  excluded_option_name: undefined
+                };
+                
+                // Añadir detalles específicos según el tipo de incompatibilidad
+                if (option.compatibility_details.reason === "requires") {
+                  incompatibilityDetails.required_option_name = option.compatibility_details.dependency_name;
+                } else if (option.compatibility_details.reason === "excludes") {
+                  incompatibilityDetails.excluded_option_name = option.compatibility_details.dependency_name;
+                }
+              }
+              break;
+            }
+          }
+          if (isIncompatible) break;
+        }
+      } else if (compatibilityResult.is_compatible === false) {
+        // Formato antiguo de respuesta
+        isIncompatible = true;
+        incompatibilityDetails = compatibilityResult.incompatibility_details;
+      }
+      
+      // Si hay incompatibilidad, mostrar mensaje y detener
+      if (isIncompatible) {
         let errorMessage = 'Las opciones seleccionadas no son compatibles entre sí.';
-        if (compatibilityResult.incompatibility_details) {
-          const details = compatibilityResult.incompatibility_details;
-          if (details.type === 'excludes') {
-            errorMessage = `La opción "${details.option_name}" no es compatible con "${details.excluded_option_name}".`;
-          } else if (details.type === 'requires') {
-            errorMessage = `La opción "${details.option_name}" requiere seleccionar "${details.required_option_name}".`;
+        
+        if (incompatibilityDetails) {
+          if (incompatibilityDetails.type === 'excludes') {
+            errorMessage = `La opción "${incompatibilityDetails.option_name}" no es compatible con "${incompatibilityDetails.excluded_option_name}".`;
+          } else if (incompatibilityDetails.type === 'requires') {
+            errorMessage = `La opción "${incompatibilityDetails.option_name}" requiere seleccionar "${incompatibilityDetails.required_option_name}".`;
           }
         }
+        
         alert(`No se puede añadir al carrito: ${errorMessage} Por favor, elige otra combinación.`);
         setLoading(false);
         return;

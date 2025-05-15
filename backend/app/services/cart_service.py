@@ -20,13 +20,53 @@ def add_to_cart(db: Session, cart_id: int, product_id: int, selected_option_ids:
     Añade un producto configurado al carrito.
     """
     # Validar que las opciones seleccionadas sean compatibles
-    compatibility_result = validate_compatibility(db, selected_option_ids)
-    if not compatibility_result["is_compatible"]:
-        details = compatibility_result["incompatibility_details"]
-        if details and details["type"] == "excludes":
-            raise ValueError(f"La opción '{details['option_name']}' no es compatible con '{details['excluded_option_name']}'")
-        elif details and details["type"] == "requires":
-            raise ValueError(f"La opción '{details['option_name']}' requiere '{details['required_option_name']}'")
+    compatibility_result = validate_compatibility(db, product_id=product_id, selected_option_ids=selected_option_ids)
+    
+    # Comprobar si el resultado tiene la estructura esperada (el nuevo formato) o el formato antiguo
+    if isinstance(compatibility_result, dict) and "product" in compatibility_result:
+        # Nuevo formato - necesitamos determinar la compatibilidad general
+        is_compatible = True
+        incompatibility_details = None
+        
+        # Verificar si alguna opción seleccionada es incompatible
+        for component in compatibility_result["product"]["components"]:
+            for option in component["options"]:
+                if option.get("selected", False) and not option.get("is_compatible", True):
+                    is_compatible = False
+                    # Intentar extraer detalles de incompatibilidad si existen
+                    if "compatibility_details" in option:
+                        incompatibility_details = {
+                            "type": option["compatibility_details"].get("reason", "unknown"),
+                            "option_name": option["name"],
+                            "option_id": option["id"]
+                        }
+                        # Añadir detalles específicos según el tipo de incompatibilidad
+                        if option["compatibility_details"]["reason"] == "requires":
+                            incompatibility_details["required_option_name"] = option["compatibility_details"]["dependency_name"]
+                            incompatibility_details["required_option_id"] = option["compatibility_details"]["dependency_id"]
+                        elif option["compatibility_details"]["reason"] == "excludes":
+                            incompatibility_details["excluded_option_name"] = option["compatibility_details"]["dependency_name"]
+                            incompatibility_details["excluded_option_id"] = option["compatibility_details"]["dependency_id"]
+                    break
+            if not is_compatible:
+                break
+                
+        # Crear un objeto de resultado en el formato que espera el resto del código
+        compatibility_result = {
+            "is_compatible": is_compatible,
+            "incompatibility_details": incompatibility_details
+        }
+    
+    # Ahora usamos el objeto compatibility_result normalizado
+    if not compatibility_result.get("is_compatible", False):
+        details = compatibility_result.get("incompatibility_details")
+        if details:
+            if details.get("type") == "excludes":
+                raise ValueError(f"La opción '{details['option_name']}' no es compatible con '{details['excluded_option_name']}'")
+            elif details.get("type") == "requires":
+                raise ValueError(f"La opción '{details['option_name']}' requiere '{details['required_option_name']}'")
+            else:
+                raise ValueError(f"Hay una incompatibilidad con la opción '{details['option_name']}'")
         else:
             raise ValueError("Las opciones seleccionadas no son compatibles")
     
