@@ -1,178 +1,177 @@
-# E-commerce de Bicicletas Personalizables
+# Customizable Bicycle E-commerce
 
-Sistema de e-commerce para Marcus que permite vender bicicletas altamente personalizables con:
-- Frontend en Next.js
-- Backend en FastAPI
-- Base de datos PostgreSQL
-- Todo dockerizado
+E-commerce system for Marcus that allows selling highly customizable bicycles with:
+- Frontend in Next.js
+- Backend in FastAPI
+- PostgreSQL database
+- All dockerized
 
-## Descripción del proyecto
+## Project Description
 
-Este proyecto es una solución para la tienda de bicicletas de Marcus, permitiendo la venta online de bicicletas completamente personalizables. El sistema está diseñado con escalabilidad para permitir en el futuro la venta de otros artículos deportivos como esquís, tablas de surf, patines, etc.
+This project is a solution for Marcus's bicycle shop, enabling online sales of fully customizable bicycles. The system is designed with scalability to allow future sales of other sports items such as skis, surfboards, skates, etc.
 
-### Funcionalidad clave
-- Los clientes pueden personalizar completamente sus bicicletas eligiendo diferentes opciones para cada parte
-- Algunas combinaciones están prohibidas por limitaciones físicas reales
-- Control de inventario para marcar opciones como "temporalmente sin stock"
-- Cálculo dinámico de precios basado en las opciones seleccionadas, incluyendo reglas especiales de precios para ciertas combinaciones
+### Key Functionality
+- Customers can fully customize their bicycles by choosing different options for each part
+- Some combinations are prohibited due to real physical limitations
+- Inventory control to mark options as "temporarily out of stock"
+- Dynamic price calculation based on selected options, including special pricing rules for certain combinations
 
-## Características principales
-- Personalización de bicicletas con verificación de compatibilidad
-- Control de inventario
-- Precios dinámicos según configuraciones
-- Panel de administración
-- Carrito de compras
+## Main Features
+- Bicycle customization with compatibility verification
+- Inventory control
+- Dynamic pricing based on configurations
+- Admin panel
+- Shopping cart
 
-## Modelo de datos
+## Data Model
 
-El sistema utiliza un modelo de datos relacional optimizado para la personalización de productos:
+The system uses a relational data model optimized for product customization:
 
-### Entidades principales
-- **Producto**: Tipos de bicicletas disponibles (y futuros productos como esquís, etc.)
-- **Categoría de Parte**: Agrupaciones de partes (cuadro, ruedas, cadena, etc.)
-- **Opción**: Opciones específicas para cada categoría (ej: tipos de cuadro: Full-suspension, Diamond, Step-through)
-- **Regla de Compatibilidad**: Define combinaciones prohibidas entre opciones
-- **Regla de Precio**: Define precios especiales para combinaciones específicas
-- **Inventario**: Control de stock para cada opción
-- **Carrito**: Almacena las selecciones del usuario
-- **Pedido**: Registro de compras completadas
+### Main Entities
+- **Product**: Available bicycle types (and future products like skis, etc.)
+- **Part Category**: Part groupings (frame, wheels, chain, etc.)
+- **Option**: Specific options for each category (e.g., frame types: Full-suspension, Diamond, Step-through)
+- **Compatibility Rule**: Defines prohibited combinations between options
+- **Price Rule**: Defines special prices for specific combinations
+- **Inventory**: Stock control for each option
+- **Cart**: Stores user selections
+- **Order**: Record of completed purchases
 
-### Relaciones clave
-- Producto -> Categoría de Parte (1:N)
-- Categoría de Parte -> Opción (1:N)
-- Opción <-> Regla de Compatibilidad (N:M)
-- Opción <-> Regla de Precio (N:M)
+### Key Relationships
+- Product -> Part Category (1:N)
+- Part Category -> Option (1:N)
+- Option <-> Compatibility Rule (N:M)
+- Option <-> Price Rule (N:M)
 
-## Arquitectura
+## Architecture
 
 ### Backend (FastAPI)
-- Rutas API REST para productos, partes, opciones y carrito
-- Validación de compatibilidad de piezas
-- Cálculo dinámico de precios según configuraciones
-- Gestión de datos mediante SQLAlchemy
+- REST API routes for products, parts, options, and cart
+- Parts compatibility validation
+- Dynamic price calculation based on configurations
+- Data management through SQLAlchemy
 
 ### Frontend (Next.js)
-- Interfaces para explorar productos
-- Configurador de bicicletas con validación en tiempo real
-- Carrito de compras
-- Diseño responsive con Tailwind CSS
+- Interfaces for exploring products
+- Bicycle configurator with real-time validation
+- Shopping cart
+- Responsive design with Tailwind CSS
 
-### Base de datos (PostgreSQL)
-- Almacenamiento relacional para productos, partes y dependencias
-- Registro de carritos y pedidos
+### Database (PostgreSQL)
+- Relational storage for products, parts, and dependencies
+- Cart and order records
 
-## Principales acciones de usuario
+## Main User Actions
 
-### 1. Explorar productos
-- Navegación por catálogo de bicicletas
-- Filtrado por tipo y características
+### 1. Explore Products
+- Browse bicycle catalog
+- Filter by type and characteristics
 
-### 2. Personalización de bicicleta
-- Selección secuencial de opciones para cada parte
-- Validación en tiempo real de compatibilidad
-- Actualización dinámica de precio según selecciones
-- Visualización de opciones disponibles/no disponibles
+### 2. Bicycle Customization
+- Sequential selection of options for each part
+- Real-time compatibility validation
+- Dynamic price updates based on selections
+- Display of available/unavailable options
 
-### 3. Gestión del carrito
-- Añadir configuración al carrito
-- Revisar y modificar elementos
-- Proceso de pago
+### 3. Cart Management
+- Add configuration to cart
+- Review and modify items
+- Checkout process
 
-## Flujos de trabajo administrativos
+## Administrative Workflows
 
-### 1. Gestión de productos
-- Creación de nuevos tipos de productos (bicicletas, esquís, etc.)
-- Definición de las categorías de partes asociadas
+### 1. Product Management
+- Creation of new product types (bicycles, skis, etc.)
+- Definition of associated part categories
 
-### 2. Gestión de opciones
-- Añadir nuevas opciones para cada categoría (ej: nuevos colores de aro)
-- Configurar disponibilidad de stock
+### 2. Options Management
+- Add new options for each category (e.g., new rim colors)
+- Configure stock availability
 
-### 3. Configuración de reglas
-- Definir reglas de compatibilidad entre opciones
-- Establecer reglas de precios especiales para combinaciones específicas
+### 3. Rules Configuration
+- Define compatibility rules between options
+- Set special pricing rules for specific combinations
 
-### 4. Análisis de ventas
-- Revisión de pedidos
-- Estadísticas de configuraciones populares
+### 4. Sales Analysis
+- Order review
+- Popular configuration statistics
 
-## Casos de ejemplo incluidos
+## Example Cases Included
 
-### Reglas de compatibilidad
-- Si se elige "Ruedas Fat Bike" → "Aro Rojo" no está disponible
-- Si se elige "Ruedas de montaña" → Solo el cuadro "Full-suspension" está disponible
+### Compatibility Rules
+- If "Fat Bike Wheels" is chosen → "Red Rim" is not available
+- If "Mountain Wheels" is chosen → Only "Full-suspension" frame is available
 
-### Reglas de precios especiales
-- Si se elige "Mate" + "Cuadro Diamond" → 35€
-- Si se elige "Mate" + "Cuadro Full-suspension" → 50€
+### Special Price Rules
+- If "Matte" + "Diamond Frame" is chosen → 35€
+- If "Matte" + "Full-suspension Frame" is chosen → 50€
 
-### Control de inventario
-- Si una opción está sin stock → no se puede seleccionar
+### Inventory Control
+- If an option is out of stock → it cannot be selected
 
-## Requisitos previos
-- Docker y Docker Compose
-- Node.js 18+ (para desarrollo local)
-- Python 3.11+ (para desarrollo local)
+## Prerequisites
+- Docker and Docker Compose
+- Node.js 18+ (for local development)
+- Python 3.11+ (for local development)
 
-## Instalación
+## Installation
 
-1. Clonar el repositorio:
+1. Clone the repository:
 ```bash
-git clone [url-del-repositorio]
+git clone [repository-url]
 cd factorial-technical-test
 ```
 
-2. Iniciar con Docker:
+2. Start with Docker:
 ```bash
 docker compose up -d
 ```
 
-3. Acceder a la aplicación:
+3. Access the application:
    - Frontend: http://localhost:3000
    - API Backend: http://localhost:8000
-   - API Documentación: http://localhost:8000/docs
+   - API Documentation: http://localhost:8000/docs
 
-## Ejecución de tests
+## Running Tests
 
-### Tests Backend
+### Backend Tests
 ```bash
 docker compose exec backend pytest
 ```
 
-## Estructura del proyecto
+## Project Structure
 
 ```
 /
-├── backend/               # API FastAPI
+├── backend/               # FastAPI API
 │   ├── app/
-│   │   ├── api/           # Rutas de la API
-│   │   ├── models/        # Modelos de datos
-│   │   ├── schemas/       # Esquemas Pydantic
-│   │   ├── services/      # Lógica de negocio
-│   │   └── main.py        # Punto de entrada
+│   │   ├── api/           # API routes
+│   │   ├── models/        # Data models
+│   │   ├── schemas/       # Pydantic schemas
+│   │   ├── services/      # Business logic
+│   │   └── main.py        # Entry point
 │   └── Dockerfile
-├── frontend/              # Aplicación Next.js
+├── frontend/              # Next.js Application
 │   ├── src/
-│   │   ├── app/           # Páginas Next.js
-│   │   ├── components/    # Componentes React
-│   │   ├── api/           # Clientes de API
-│   │   └── types/         # Tipos TypeScript
+│   │   ├── app/           # Next.js pages
+│   │   ├── components/    # React components
+│   │   ├── api/           # API clients
+│   │   └── types/         # TypeScript types
 │   └── Dockerfile
-├── docker-compose.yml     # Configuración de Docker
-└── scripts/               # Scripts útiles
+├── docker-compose.yml     # Docker configuration
+└── scripts/               # Useful scripts
 ```
 
+## Technical Decisions
 
-## Decisiones técnicas
+### PostgreSQL Choice
+- The relational nature of the data model requires a robust relational system
+- Compatibility rules and special prices are efficiently implemented through SQL queries
 
-### Elección de PostgreSQL
-- La naturaleza relacional del modelo de datos requiere un sistema relacional robusto
-- Las reglas de compatibilidad y precios especiales se implementan eficientemente mediante consultas SQL
+### Backend/Frontend Separation
+- Allows independent scalability
+- Facilitates parallel development of frontend and backend
 
-### Separación Backend/Frontend
-- Permite escalabilidad independiente
-- Facilita el desarrollo paralelo del frontend y backend
-
-### Dockerización
-- Asegura consistencia entre entornos de desarrollo y producción
-- Simplifica el despliegue
+### Dockerization
+- Ensures consistency between development and production environments
+- Simplifies deployment
