@@ -226,10 +226,24 @@ export const ProductsApi = {
   /**
    * Valida si un conjunto de opciones son compatibles
    */
-  validateCompatibility: async (selectedOptions: number[]): Promise<{is_compatible: boolean, incompatibility_details?: any}> => {
+  validateCompatibility: async (selectedOptions: number[], productId?: number): Promise<any> => {
     try {
+      // Preparar el ID del producto
+      let requestProductId = productId || null;
+      
+      // Si no se proporciona ID y hay opciones seleccionadas, intentar inferir el ID
+      if (!requestProductId && selectedOptions.length > 0) {
+        try {
+          // Esta lógica se implementará en el backend, así que evitamos hacer llamadas adicionales aquí
+          console.log('Usando opción seleccionada para inferir el producto:', selectedOptions[0]);
+        } catch (inferError) {
+          console.warn('No se pudo inferir el productId a partir de las opciones seleccionadas:', inferError);
+        }
+      }
+
       // Cambiar la estructura para adaptarse a lo que espera el backend
       const requestBody = {
+        product_id: requestProductId,
         selected_options: selectedOptions
       };
       
@@ -237,11 +251,12 @@ export const ProductsApi = {
       
       const response = await apiClient.post(getApiUrl('products/validate-compatibility'), requestBody);
       console.log('Respuesta de compatibilidad:', response.data);
+      
+      // Devolver directamente la respuesta completa para manejarla en los componentes
       return response.data;
     } catch (error) {
       console.error('Error al validar compatibilidad:', error);
-      // Si falla, asumir que es compatible para no bloquear al usuario
-      return { is_compatible: true };
+      throw error; // Propagar el error en lugar de asumir compatibilidad
     }
   },
 
@@ -250,51 +265,50 @@ export const ProductsApi = {
    */
   calculatePrice: async (selectedOptions: number[]): Promise<number> => {
     try {
-      // Verificar que haya opciones para calcular
-      if (!selectedOptions || selectedOptions.length === 0) {
-        console.log('No hay opciones seleccionadas para calcular precio');
-        return 0;
+      // Intentar obtener el ID del producto a partir de la primera opción seleccionada
+      let productId = null;
+      if (selectedOptions.length > 0) {
+        try {
+          // Esta lógica se implementará en el backend, así que evitamos hacer llamadas adicionales aquí
+          console.log('Usando opción seleccionada para inferir el producto en calculate-price:', selectedOptions[0]);
+        } catch (inferError) {
+          console.warn('No se pudo inferir el productId a partir de las opciones seleccionadas:', inferError);
+        }
       }
-      
-      console.log(`Calculando precio para opciones: ${selectedOptions.join(', ')}`);
-      
-      // Imprimir el cuerpo completo de la solicitud para depuración
+
+      // Cambiar la estructura para adaptarse a lo que espera el backend
       const requestBody = {
+        product_id: productId, // Este valor será null y el backend lo detectará y actuará en consecuencia
         selected_options: selectedOptions
       };
-      console.log('Enviando solicitud de cálculo de precio:', requestBody);
+      
+      console.log('Enviando datos para cálculo de precio:', requestBody);
       
       const response = await apiClient.post(getApiUrl('products/calculate-price'), requestBody);
+      console.log('Respuesta de cálculo de precio:', response.data);
       
-      console.log('Respuesta completa de cálculo de precio:', response);
-      console.log('Datos de respuesta de cálculo de precio:', response.data);
+      // Obtener el precio del objeto de respuesta y garantizar que sea un número válido
+      const total_price = response.data.total_price;
       
-      // Validar que la respuesta tenga un total_price válido
-      if (response.data && typeof response.data.total_price === 'number') {
-        const price = response.data.total_price;
-        console.log(`Precio calculado recibido del servidor: ${price}`);
-        return price;
-      } else {
-        console.error('Formato de respuesta inválido en calculate-price, datos:', response.data);
-        if (response.data) {
-          console.log('Tipo de total_price:', typeof response.data.total_price);
-          console.log('Valor de total_price:', response.data.total_price);
-        }
-        console.log('Retornando 0 como precio por defecto debido a formato inválido');
+      // Validar y convertir el precio
+      if (total_price === undefined || total_price === null) {
+        console.error('La API no devolvió un valor de precio válido');
         return 0;
       }
-    } catch (error: any) {
-      console.error('Error al calcular precio:', error);
-      // Imprimir más detalles sobre el error
-      if (error.response) {
-        console.error('Datos del error:', error.response.data);
-        console.error('Estado del error:', error.response.status);
-      } else if (error.request) {
-        console.error('Error en la solicitud sin respuesta');
-      } else {
-        console.error('Error de configuración:', error.message);
+      
+      // Convertir a número si es string
+      const numericPrice = typeof total_price === 'string' ? parseFloat(total_price) : total_price;
+      
+      // Verificar que sea un número válido
+      if (isNaN(numericPrice)) {
+        console.error('La API devolvió un precio que no se puede convertir a número:', total_price);
+        return 0;
       }
-      console.log('Retornando 0 como precio por defecto debido a error');
+      
+      return numericPrice;
+    } catch (error) {
+      console.error('Error al calcular precio:', error);
+      // Si falla, devolver 0 para no romper la UI
       return 0;
     }
   },

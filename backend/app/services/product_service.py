@@ -7,7 +7,22 @@ from decimal import Decimal
 from fastapi import HTTPException
 
 def get_product(db: Session, product_id: int):
-    return db.query(Product).filter(Product.id == product_id).first()
+    """
+    Obtiene un producto por su ID, incluyendo todos sus tipos de partes, opciones y dependencias.
+    Convierte los valores enum a strings para evitar errores de serialización.
+    """
+    product = db.query(Product).filter(Product.id == product_id).first()
+    
+    if product:
+        # Asegurar que los tipos de dependencia sean strings
+        for part_type in product.part_types:
+            for option in part_type.options:
+                for dependency in option.dependencies:
+                    # Convertir enum a string para la serialización
+                    if hasattr(dependency.type, 'value'):
+                        dependency.type = dependency.type.value
+    
+    return product
 
 def get_products(db: Session, skip: int = 0, limit: int = 100):
     return db.query(Product).offset(skip).limit(limit).all()
@@ -101,64 +116,370 @@ def calculate_price(db: Session, selected_option_ids: List[int]) -> Decimal:
         print(f"Error al calcular precio: {e}")
         return Decimal('0')
 
-def validate_compatibility(db: Session, selected_option_ids: List[int]) -> dict:
+def validate_compatibility(db: Session, product_id=None, selected_option_ids: List[int] = None) -> dict:
     """
-    Verifica si las opciones seleccionadas son compatibles entre sí.
-    Retorna un diccionario con el resultado y detalles de la incompatibilidad si existe.
+    Verifica la compatibilidad de las opciones para un producto.
     """
-    result = {
-        "is_compatible": True,
-        "incompatibility_details": None
-    }
+    if selected_option_ids is None:
+        selected_option_ids = []
     
     print(f"Validando compatibilidad para opciones: {selected_option_ids}")
     
-    if len(selected_option_ids) == 0:
+    # Obtener el producto y sus tipos de componentes
+    if product_id is None and selected_option_ids:
+        # Intentar obtener el product_id de la primera opción seleccionada
+        first_option = db.query(PartOption).filter(PartOption.id == selected_option_ids[0]).first()
+        if first_option:
+            part_type = db.query(PartType).filter(PartType.id == first_option.part_type_id).first()
+            if part_type:
+                product_id = part_type.product_id
+    
+    if not product_id:
+        raise HTTPException(status_code=400, detail="No se pudo determinar el producto")
+    
+    product = db.query(Product).filter(Product.id == product_id).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+    
+    result = {
+        "product": {
+            "id": product.id,
+            "name": product.name,
+            "components": []
+        }
+    }
+    
+    # Si no hay selecciones, todas las opciones son compatibles
+    if not selected_option_ids:
+        part_types = db.query(PartType).filter(PartType.product_id == product_id).all()
+        for part_type in part_types:
+            component_data = {
+                "id": part_type.id,
+                "name": part_type.name,
+                "options": []
+            }
+            
+            options = db.query(PartOption).filter(PartOption.part_type_id == part_type.id).all()
+            for option in options:
+                option_data = {
+                    "id": option.id,
+                    "name": option.name,
+                    "base_price": option.base_price,
+                    "in_stock": option.in_stock,
+                    "selected": False,
+                    "is_compatible": option.in_stock  # Solo incompatible si no hay stock
+                }
+                
+                # Añadir motivo de disponibilidad
+                if not option.in_stock:
+                    option_data["availability_reason"] = "out_of_stock"
+                
+                component_data["options"].append(option_data)
+            
+            result["product"]["components"].append(component_data)
+        
         return result
     
-    # Obtener los nombres de las opciones para mejor información
-    options_info = {}
-    db_options = db.query(PartOption).filter(PartOption.id.in_(selected_option_ids)).all()
-    for option in db_options:
-        options_info[option.id] = option.name
-    
+    # Obtener todas las dependencias relevantes
+    all_dependencies = []
     for option_id in selected_option_ids:
-        # Buscar todas las dependencias para esta opción
-        dependencies = db.query(OptionDependency).filter(
+        # Obtener dependencias directas (donde la opción es el origen)
+        direct_deps = db.query(OptionDependency).filter(
             OptionDependency.option_id == option_id
         ).all()
+        all_dependencies.extend(direct_deps)
         
-        for dependency in dependencies:
-            if dependency.type == DependencyType.requires:
-                # Si requiere una opción que no está seleccionada, no es compatible
-                if dependency.depends_on_option_id not in selected_option_ids:
-                    required_option = db.query(PartOption).filter(PartOption.id == dependency.depends_on_option_id).first()
-                    result["is_compatible"] = False
-                    result["incompatibility_details"] = {
-                        "type": "requires",
-                        "option_id": option_id,
-                        "option_name": options_info.get(option_id, f"Opción {option_id}"),
-                        "required_option_id": dependency.depends_on_option_id,
-                        "required_option_name": required_option.name if required_option else f"Opción {dependency.depends_on_option_id}"
-                    }
-                    print(f"Incompatibilidad: {options_info.get(option_id)} requiere {required_option.name if required_option else dependency.depends_on_option_id}")
-                    return result
-            elif dependency.type == DependencyType.excludes:
-                # Si excluye una opción que está seleccionada, no es compatible
-                if dependency.depends_on_option_id in selected_option_ids:
-                    excluded_option = db.query(PartOption).filter(PartOption.id == dependency.depends_on_option_id).first()
-                    result["is_compatible"] = False
-                    result["incompatibility_details"] = {
-                        "type": "excludes",
-                        "option_id": option_id,
-                        "option_name": options_info.get(option_id, f"Opción {option_id}"),
-                        "excluded_option_id": dependency.depends_on_option_id,
-                        "excluded_option_name": excluded_option.name if excluded_option else f"Opción {dependency.depends_on_option_id}"
-                    }
-                    print(f"Incompatibilidad: {options_info.get(option_id)} excluye {excluded_option.name if excluded_option else dependency.depends_on_option_id}")
-                    return result
+        # Obtener dependencias inversas (donde la opción es el destino)
+        inverse_deps = db.query(OptionDependency).filter(
+            OptionDependency.depends_on_option_id == option_id
+        ).all()
+        all_dependencies.extend(inverse_deps)
     
-    print("Todas las opciones son compatibles")
+    # Verificar si hay incompatibilidades en las selecciones actuales
+    has_incompatibilities = False
+    incompatible_options = set()  # Conjunto para almacenar IDs de opciones incompatibles
+    incompatible_reasons = {}  # Diccionario para almacenar motivos de incompatibilidad
+    
+    for option_id in selected_option_ids:
+        option = db.query(PartOption).filter(PartOption.id == option_id).first()
+        if not option:
+            continue
+            
+        # Verificar dependencias requires
+        requires_deps = db.query(OptionDependency).filter(
+            OptionDependency.option_id == option_id,
+            OptionDependency.type == DependencyType.requires
+        ).all()
+        
+        for dep in requires_deps:
+            if dep.depends_on_option_id not in selected_option_ids:
+                has_incompatibilities = True
+                incompatible_options.add(option_id)  # La opción que requiere algo no satisfecho es incompatible
+                required = db.query(PartOption).filter(PartOption.id == dep.depends_on_option_id).first()
+                
+                # Guardar el motivo de incompatibilidad
+                incompatible_reasons[option_id] = {
+                    "reason": "requires",
+                    "dependency_id": dep.depends_on_option_id,
+                    "dependency_name": required.name if required else f"Opción {dep.depends_on_option_id}"
+                }
+                
+                print(f"Incompatibilidad: {option.name} requiere {required.name if required else dep.depends_on_option_id}")
+                break
+        
+        # Verificar dependencias excludes
+        excludes_deps = db.query(OptionDependency).filter(
+            OptionDependency.option_id == option_id,
+            OptionDependency.type == DependencyType.excludes
+        ).all()
+        
+        for dep in excludes_deps:
+            if dep.depends_on_option_id in selected_option_ids:
+                has_incompatibilities = True
+                incompatible_options.add(option_id)  # La opción que excluye es incompatible
+                incompatible_options.add(dep.depends_on_option_id)  # La opción excluida es incompatible
+                excluded = db.query(PartOption).filter(PartOption.id == dep.depends_on_option_id).first()
+                
+                # Guardar motivos para ambas opciones
+                incompatible_reasons[option_id] = {
+                    "reason": "excludes",
+                    "dependency_id": dep.depends_on_option_id,
+                    "dependency_name": excluded.name if excluded else f"Opción {dep.depends_on_option_id}"
+                }
+                
+                incompatible_reasons[dep.depends_on_option_id] = {
+                    "reason": "excluded_by",
+                    "dependency_id": option_id,
+                    "dependency_name": option.name
+                }
+                
+                print(f"Incompatibilidad: {option.name} excluye {excluded.name if excluded else dep.depends_on_option_id}")
+                break
+    
+    # Identificar opciones requeridas
+    required_options = set()
+    required_by = {}  # Diccionario para almacenar qué opción requiere a cuál
+    
+    for dep in all_dependencies:
+        if dep.type == DependencyType.requires and dep.option_id in selected_option_ids:
+            required_options.add(dep.depends_on_option_id)
+            required = db.query(PartOption).filter(PartOption.id == dep.depends_on_option_id).first()
+            requiring = db.query(PartOption).filter(PartOption.id == dep.option_id).first()
+            
+            # Guardar información sobre quién requiere esta opción
+            if dep.depends_on_option_id not in required_by:
+                required_by[dep.depends_on_option_id] = []
+            required_by[dep.depends_on_option_id].append({
+                "option_id": dep.option_id,
+                "option_name": requiring.name if requiring else f"Opción {dep.option_id}"
+            })
+            
+            print(f"Opción {required.name if required else dep.depends_on_option_id} es requerida por una opción seleccionada")
+    
+    # Solo auto-seleccionar si no hay incompatibilidades
+    final_selected_ids = selected_option_ids.copy()
+    if not has_incompatibilities:
+        final_selected_ids = list(set(selected_option_ids) | required_options)
+        print("No hay incompatibilidades, auto-seleccionando opciones requeridas")
+    else:
+        print("Hay incompatibilidades, no se auto-seleccionarán las opciones requeridas")
+    
+    # Procesar cada tipo de componente
+    part_types = db.query(PartType).filter(PartType.product_id == product_id).all()
+    for part_type in part_types:
+        component_data = {
+            "id": part_type.id,
+            "name": part_type.name,
+            "options": []
+        }
+        
+        # Obtener todas las opciones para este tipo de componente
+        options = db.query(PartOption).filter(PartOption.part_type_id == part_type.id).all()
+        
+        # Determinar si ya hay algo seleccionado para este tipo de componente
+        part_type_selected_option_ids = [opt_id for opt_id in selected_option_ids if db.query(PartOption).filter(PartOption.id == opt_id, PartOption.part_type_id == part_type.id).first()]
+        has_selection_for_part_type = len(part_type_selected_option_ids) > 0
+        
+        for option in options:
+            option_data = {
+                "id": option.id,
+                "name": option.name,
+                "base_price": option.base_price,
+                "in_stock": option.in_stock,
+                "selected": option.id in final_selected_ids,
+                "is_compatible": True
+            }
+            
+            # Las opciones seleccionadas siempre son compatibles
+            if option.id in selected_option_ids:
+                # Si la opción fue seleccionada por el usuario pero tiene incompatibilidades,
+                # indicamos que es compatible pero requiere otras opciones
+                if option.id in incompatible_options:
+                    option_data["requires_additional_selection"] = True
+                    if option.id in incompatible_reasons:
+                        option_data["compatibility_details"] = incompatible_reasons[option.id]
+                component_data["options"].append(option_data)
+                continue
+            
+            # Si no hay stock, marcar como no compatible
+            if not option.in_stock:
+                option_data["is_compatible"] = False
+                option_data["availability_reason"] = "out_of_stock"
+                print(f"Opción {option.name} no compatible por falta de stock")
+                component_data["options"].append(option_data)
+                continue
+            
+            # Si ya hay una opción seleccionada para este componente y esta no está seleccionada,
+            # marcarla como no disponible para selección pero aún es compatible
+            if has_selection_for_part_type and option.id not in final_selected_ids:
+                option_data["is_compatible"] = True
+                option_data["available_for_selection"] = False
+                option_data["availability_reason"] = "another_option_selected"
+                component_data["options"].append(option_data)
+                continue
+            
+            # Si la opción está en las incompatibilidades, marcarla como incompatible
+            if option.id in incompatible_options:
+                option_data["is_compatible"] = False
+                
+                # Añadir motivo de incompatibilidad
+                if option.id in incompatible_reasons:
+                    option_data["availability_reason"] = incompatible_reasons[option.id]["reason"]
+                    option_data["compatibility_details"] = incompatible_reasons[option.id]
+                
+                print(f"Opción {option.name} marcada como incompatible por conflictos")
+                component_data["options"].append(option_data)
+                continue
+            
+            # Si hay incompatibilidades y esta opción es requerida, es compatible pero no auto-seleccionada
+            if has_incompatibilities and option.id in required_options:
+                # Añadir información sobre quién requiere esta opción
+                if option.id in required_by:
+                    option_data["required_by"] = required_by[option.id]
+                
+                component_data["options"].append(option_data)
+                continue
+            
+            # Verificar si esta opción es compatible con las selecciones actuales
+            is_compatible = True
+            compatibility_reason = None
+            
+            # 1. Verificar si alguna opción seleccionada requiere específicamente otra opción de este tipo
+            for dep in all_dependencies:
+                if dep.type == DependencyType.requires:
+                    required_option = db.query(PartOption).filter(PartOption.id == dep.depends_on_option_id).first()
+                    if required_option and required_option.part_type_id == part_type.id:
+                        # Si se requiere una opción específica y esta no es esa opción, es incompatible
+                        if option.id != required_option.id:
+                            is_compatible = False
+                            requiring_option = db.query(PartOption).filter(PartOption.id == dep.option_id).first()
+                            
+                            compatibility_reason = {
+                                "reason": "requires_other",
+                                "requiring_id": dep.option_id,
+                                "requiring_name": requiring_option.name if requiring_option else f"Opción {dep.option_id}",
+                                "required_id": required_option.id,
+                                "required_name": required_option.name
+                            }
+                            
+                            print(f"Opción {option.name} incompatible porque se requiere específicamente {required_option.name}")
+                            break
+            
+            # 2. Verificar dependencias propias de la opción
+            if is_compatible:
+                option_deps = db.query(OptionDependency).filter(
+                    OptionDependency.option_id == option.id
+                ).all()
+                
+                for dep in option_deps:
+                    if dep.type == DependencyType.requires:
+                        # Si esta opción requiere algo que no está seleccionado
+                        if dep.depends_on_option_id not in final_selected_ids:
+                            is_compatible = False
+                            required = db.query(PartOption).filter(PartOption.id == dep.depends_on_option_id).first()
+                            
+                            compatibility_reason = {
+                                "reason": "requires",
+                                "dependency_id": dep.depends_on_option_id,
+                                "dependency_name": required.name if required else f"Opción {dep.depends_on_option_id}"
+                            }
+                            
+                            print(f"Opción {option.name} incompatible porque requiere {required.name if required else dep.depends_on_option_id}")
+                            break
+                    elif dep.type == DependencyType.excludes:
+                        # Si esta opción excluye algo que está seleccionado
+                        if dep.depends_on_option_id in final_selected_ids:
+                            is_compatible = False
+                            excluded = db.query(PartOption).filter(PartOption.id == dep.depends_on_option_id).first()
+                            
+                            compatibility_reason = {
+                                "reason": "excludes",
+                                "dependency_id": dep.depends_on_option_id,
+                                "dependency_name": excluded.name if excluded else f"Opción {dep.depends_on_option_id}"
+                            }
+                            
+                            print(f"Opción {option.name} incompatible porque excluye {excluded.name if excluded else dep.depends_on_option_id}")
+                            break
+            
+            # 3. Si hay incompatibilidades en las selecciones actuales, verificar si esta opción es parte del conflicto
+            if has_incompatibilities:
+                # Verificar si esta opción es excluida por alguna opción seleccionada
+                excluding_deps = db.query(OptionDependency).filter(
+                    OptionDependency.option_id.in_(selected_option_ids),
+                    OptionDependency.type == DependencyType.excludes,
+                    OptionDependency.depends_on_option_id == option.id
+                ).all()
+                
+                if excluding_deps:
+                    is_compatible = False
+                    excluder = db.query(PartOption).filter(PartOption.id == excluding_deps[0].option_id).first()
+                    
+                    compatibility_reason = {
+                        "reason": "excluded_by",
+                        "dependency_id": excluding_deps[0].option_id,
+                        "dependency_name": excluder.name if excluder else f"Opción {excluding_deps[0].option_id}"
+                    }
+                    
+                    print(f"Opción {option.name} incompatible porque es excluida por {excluder.name if excluder else excluding_deps[0].option_id}")
+                
+                # Verificar si esta opción es requerida por una opción que tiene conflictos
+                requiring_deps = db.query(OptionDependency).filter(
+                    OptionDependency.depends_on_option_id == option.id,
+                    OptionDependency.type == DependencyType.requires
+                ).all()
+                
+                for dep in requiring_deps:
+                    if dep.option_id in selected_option_ids and not all(
+                        req.depends_on_option_id in selected_option_ids
+                        for req in db.query(OptionDependency).filter(
+                            OptionDependency.option_id == dep.option_id,
+                            OptionDependency.type == DependencyType.requires
+                        ).all()
+                    ):
+                        is_compatible = False
+                        requiring = db.query(PartOption).filter(PartOption.id == dep.option_id).first()
+                        
+                        compatibility_reason = {
+                            "reason": "required_by_incompatible",
+                            "dependency_id": dep.option_id,
+                            "dependency_name": requiring.name if requiring else f"Opción {dep.option_id}"
+                        }
+                        
+                        print(f"Opción {option.name} incompatible porque es requerida por {requiring.name if requiring else dep.option_id} que tiene conflictos")
+                        break
+            
+            option_data["is_compatible"] = is_compatible
+            
+            # Añadir motivo de incompatibilidad
+            if not is_compatible and compatibility_reason:
+                option_data["availability_reason"] = compatibility_reason["reason"]
+                option_data["compatibility_details"] = compatibility_reason
+                
+            component_data["options"].append(option_data)
+        
+        result["product"]["components"].append(component_data)
+    
+    print("Resultado de validación:", result)
     return result
 
 def get_available_options(db: Session, product_id: int, current_selection: List[int] = None):
@@ -194,8 +515,34 @@ def get_available_options(db: Session, product_id: int, current_selection: List[
             else:
                 # Comprobar con una selección temporal que incluya esta opción
                 temp_selection = current_selection + [option.id]
-                compatibility_result = validate_compatibility(db, temp_selection)
-                is_compatible = compatibility_result["is_compatible"]
+                # Verificamos si esta opción tiene dependencias incompatibles
+                is_compatible = True
+                
+                # Comprobar dependencias de esta opción
+                dependencies = db.query(OptionDependency).filter(
+                    OptionDependency.option_id == option.id
+                ).all()
+                
+                for dependency in dependencies:
+                    if dependency.type == DependencyType.requires:
+                        if dependency.depends_on_option_id not in temp_selection:
+                            is_compatible = False
+                            break
+                    elif dependency.type == DependencyType.excludes:
+                        if dependency.depends_on_option_id in temp_selection:
+                            is_compatible = False
+                            break
+                
+                # Verificar si alguna de las opciones seleccionadas excluye esta opción
+                if is_compatible and current_selection:
+                    excluding_dependencies = db.query(OptionDependency).filter(
+                        OptionDependency.option_id.in_(current_selection),
+                        OptionDependency.type == DependencyType.excludes,
+                        OptionDependency.depends_on_option_id == option.id
+                    ).all()
+                    
+                    if excluding_dependencies:
+                        is_compatible = False
             
             part_type_data["options"].append({
                 "id": option.id,
@@ -357,3 +704,31 @@ def get_product_dependencies(db: Session, product_id: int) -> List[OptionDepende
         dep.type = dep.type.value
     
     return dependencies 
+
+def get_product_id_from_options(db: Session, selected_option_ids: List[int]) -> Optional[int]:
+    """
+    Obtiene el ID del producto al que pertenecen las opciones seleccionadas.
+    Asume que todas las opciones pertenecen al mismo producto.
+    
+    Args:
+        db: Sesión de base de datos
+        selected_option_ids: Lista de IDs de opciones seleccionadas
+        
+    Returns:
+        ID del producto o None si no se encuentran opciones
+    """
+    if not selected_option_ids:
+        return None
+    
+    # Tomamos la primera opción para obtener el tipo de parte y luego el producto
+    first_option = db.query(PartOption).filter(PartOption.id == selected_option_ids[0]).first()
+    if not first_option:
+        return None
+    
+    # Obtenemos el tipo de parte
+    part_type = db.query(PartType).filter(PartType.id == first_option.part_type_id).first()
+    if not part_type:
+        return None
+    
+    # Devolvemos el ID del producto
+    return part_type.product_id 

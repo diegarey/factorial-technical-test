@@ -67,18 +67,6 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
 
   // Cargar opciones disponibles cuando cambia la selección
   useEffect(() => {
-    // Detectar específicamente si "Aro Rojo" está entre las opciones seleccionadas
-    const selectedOptionIds = Object.values(selectedOptions);
-    const hasAroRojo = false; // Eliminamos esta detección que no es necesaria y está causando problemas de tipo
-
-    if (hasAroRojo) {
-      console.log("********** ARO ROJO ESTÁ SELECCIONADO EN EL USEEFFECT **********");
-      console.log("Precio base:", product.basePrice);
-      console.log("Precio total actual:", totalPrice);
-      console.log("Todas las opciones seleccionadas:", selectedOptions);
-      console.log("IDs de opciones seleccionadas:", selectedOptionIds);
-    }
-
     const loadOptions = async () => {
       setLoading(true);
       setError(null);
@@ -92,60 +80,101 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
         const options = await ProductsApi.getProductOptions(product.id, selectedOptionIds);
         console.log('Opciones disponibles recibidas:', options);
         
+        // Log detallado de opciones para depuración
+        options.forEach(partType => {
+          console.log(`Opciones para ${partType.name} (ID: ${partType.id}):`);
+          partType.options.forEach(option => {
+            console.log(`- ${option.name} (ID: ${option.id}): compatible=${option.is_compatible}, disponible=${option.available_for_selection !== false}, seleccionada=${option.selected || false}`);
+          });
+        });
+        
         if (Array.isArray(options)) {
-          setAvailableOptions(options);
+          // Verificar compatibilidad de las opciones seleccionadas
+          if (selectedOptionIds.length > 0) {
+            try {
+              const compatibilityResult = await ProductsApi.validateCompatibility(selectedOptionIds, product.id);
+              console.log('Resultado de compatibilidad:', compatibilityResult);
+              
+              // Actualizar las opciones con el resultado de compatibilidad del backend
+              if (compatibilityResult && compatibilityResult.product && compatibilityResult.product.components) {
+                // Usar directamente la respuesta del backend que incluye el estado actualizado de compatibilidad
+                const updatedComponents = compatibilityResult.product.components;
+                
+                // Convertir los componentes del formato de respuesta API al formato usado en el frontend
+                const updatedOptions = updatedComponents.map((component: any) => ({
+                  id: component.id,
+                  name: component.name,
+                  options: component.options.map((opt: any) => ({
+                    id: opt.id,
+                    name: opt.name,
+                    base_price: opt.base_price,
+                    in_stock: opt.in_stock,
+                    selected: opt.selected,
+                    is_compatible: opt.is_compatible,
+                    available_for_selection: opt.available_for_selection !== false,
+                    availability_reason: opt.availability_reason
+                  }))
+                }));
+                
+                console.log('Opciones actualizadas con estado de compatibilidad:', updatedOptions);
+                setAvailableOptions(updatedOptions);
+              } else {
+                // Si la respuesta no tiene el formato esperado, usar las opciones originales
+                console.warn('La respuesta de compatibilidad no tiene el formato esperado, usando opciones originales');
+                setAvailableOptions(options);
+              }
+            } catch (compatibilityError) {
+              console.error('Error al validar compatibilidad:', compatibilityError);
+              // En caso de error de compatibilidad, mostrar las opciones tal cual vienen de la API
+              setAvailableOptions(options);
+            }
+          } else {
+            setAvailableOptions(options);
+          }
+          
+          // Procesar opciones auto-seleccionadas por el backend
+          const newSelections = { ...selectedOptions };
+          let selectionUpdated = false;
+          
+          options.forEach(partType => {
+            partType.options.forEach(option => {
+              if (option.selected && (!newSelections[partType.id] || newSelections[partType.id] !== option.id)) {
+                console.log(`Auto-seleccionando opción: ${option.name} (ID: ${option.id}) del tipo ${partType.name}`);
+                newSelections[partType.id] = option.id;
+                selectionUpdated = true;
+              }
+            });
+          });
+          
+          if (selectionUpdated) {
+            console.log('Actualizando selecciones con auto-selección del backend:', newSelections);
+            setSelectedOptions(newSelections);
+          }
+          
+          // Calcular precio total
+          if (selectedOptionIds.length > 0) {
+            try {
+              const price = await ProductsApi.calculatePrice(selectedOptionIds);
+              if (typeof price === 'number' && !isNaN(price)) {
+                const basePrice = typeof product.basePrice === 'number' && !isNaN(product.basePrice) ? product.basePrice : 0;
+                const newTotalPrice = basePrice + price;
+                setTotalPrice(Math.max(newTotalPrice, basePrice));
+              }
+            } catch (priceError) {
+              console.error('Error al calcular precio:', priceError);
+              setTotalPrice(product.basePrice || 0);
+            }
+          } else {
+            setTotalPrice(product.basePrice || 0);
+          }
         } else {
           console.error('Formato de opciones inesperado:', options);
           setError('Las opciones recibidas tienen un formato inesperado.');
         }
-        
-        // Asegurar que el precio base sea un número válido
-        const basePrice = typeof product.basePrice === 'number' && !isNaN(product.basePrice) && product.basePrice > 0
-          ? product.basePrice 
-          : 0;
-        
-        console.log(`Usando precio base: ${basePrice} para el cálculo`);
-        
-        // Calcular precio total - incluir siempre el precio base
-        if (selectedOptionIds.length > 0) {
-          try {
-            const price = await ProductsApi.calculatePrice(selectedOptionIds);
-            console.log(`Precio de opciones recibido de la API: ${price}`);
-            
-            // Solo actualizar el precio si es un número válido
-            if (typeof price === 'number' && !isNaN(price)) {
-              // Sumar el precio base si el backend no lo incluye en el cálculo
-              const newTotalPrice = basePrice + price;
-              
-              // Asegurar que el precio no sea inferior al precio base
-              const finalPrice = newTotalPrice < basePrice ? basePrice : newTotalPrice;
-              
-              console.log(`Precio calculado final: Precio base (${basePrice}) + Precio opciones (${price}) = ${finalPrice}`);
-              setTotalPrice(finalPrice);
-            } else {
-              // Si el precio no es válido, usar al menos el precio base
-              console.warn(`Precio calculado inválido: ${price}, usando precio base: ${basePrice}`);
-              setTotalPrice(basePrice);
-            }
-          } catch (priceError) {
-            console.error('Error al calcular precio:', priceError);
-            // En caso de error, mantener al menos el precio base
-            setTotalPrice(basePrice);
-          }
-        } else {
-          // Si no hay opciones seleccionadas, usar solo el precio base
-          console.log(`No hay opciones seleccionadas, usando solo precio base: ${basePrice}`);
-          setTotalPrice(basePrice);
-        }
       } catch (error) {
         console.error('Error al cargar opciones:', error);
         setError('No se pudieron cargar las opciones. Por favor, recarga la página.');
-        
-        // Asegurarse de que al menos el precio base esté configurado en caso de error
-        const basePrice = typeof product.basePrice === 'number' && !isNaN(product.basePrice) && product.basePrice > 0
-          ? product.basePrice 
-          : 0;
-        setTotalPrice(basePrice);
+        setTotalPrice(product.basePrice || 0);
       } finally {
         setLoading(false);
       }
@@ -213,7 +242,7 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
       
       // 2. Validar compatibilidad antes de enviar al carrito
       console.log("Validando compatibilidad de opciones...");
-      const compatibilityResult = await ProductsApi.validateCompatibility(selectedOptionIds);
+      const compatibilityResult = await ProductsApi.validateCompatibility(selectedOptionIds, productId);
       
       if (!compatibilityResult.is_compatible) {
         let errorMessage = 'Las opciones seleccionadas no son compatibles entre sí.';
@@ -427,9 +456,15 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
                 {partType.options && partType.options.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {partType.options.map((option) => {
-                      // Solo mostrar incompatibilidad si hay al menos una selección previa
-                      const isIncompatible = option.is_compatible === false && Object.keys(selectedOptions).length > 0;
+                      // Usar directamente el valor de is_compatible del backend
+                      const isIncompatible = option.is_compatible === false;
+                      const isNotAvailable = option.available_for_selection === false;
                       const isSelected = selectedOptions[partType.id] === option.id;
+                      
+                      // Logs para depuración
+                      if (partType.name === 'Horquilla') {
+                        console.log(`Renderizando horquilla ${option.name}: compatible=${option.is_compatible}, disponible=${option.available_for_selection !== false}, seleccionada=${isSelected}`);
+                      }
                       
                       return (
                         <div 
@@ -438,14 +473,21 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
                             relative border rounded-xl p-4 transition-all duration-200 hover:shadow-md
                             ${isSelected 
                               ? 'border-primary bg-primary bg-opacity-5 shadow-sm' 
-                              : 'border-gray-200 hover:border-primary'}
-                            ${isIncompatible ? 'opacity-60 cursor-not-allowed bg-gray-50' : 'cursor-pointer'}
+                              : isIncompatible 
+                                ? 'border-red-300 bg-red-50'
+                                : isNotAvailable
+                                  ? 'border-gray-300 bg-gray-50'
+                                  : 'border-gray-200 hover:border-primary'}
+                            ${(isIncompatible || isNotAvailable) ? 'opacity-75 cursor-not-allowed' : 'cursor-pointer'}
                           `}
                           onClick={() => {
-                            if (!isIncompatible) {
+                            if (!isIncompatible && !isNotAvailable) {
                               handleOptionSelect(partType.id, option.id);
+                            } else if (isNotAvailable) {
+                              alert(`Ya has seleccionado otra opción de ${partType.name}. Debes deseleccionar esa opción primero.`);
                             } else {
-                              alert(`La opción "${option.name}" no es compatible con tu selección actual.`);
+                              // Mostrar una alerta más descriptiva que indique por qué no es compatible
+                              alert(`La opción "${option.name}" no es compatible con tu selección actual. Por favor, selecciona otra opción o cambia tus selecciones previas.`);
                             }
                           }}
                         >
@@ -455,25 +497,54 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
                           </div>
                           
                           <div className="flex justify-between items-center">
-                            <span className="font-medium text-gray-800">{option.name}</span>
+                            <span className={`font-medium ${isIncompatible ? 'text-red-600' : isNotAvailable ? 'text-gray-500' : 'text-gray-800'}`}>
+                              {option.name}
+                            </span>
                             <span className="text-primary font-bold">
                               +€{option.base_price ? option.base_price.toFixed(2) : '0.00'}
                             </span>
                           </div>
                           
                           {isIncompatible && (
-                            <div className="mt-2 flex items-center text-red-500 text-sm">
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <div className="mt-2 flex items-center text-red-500 text-sm bg-red-50 p-2 rounded border border-red-200">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                               </svg>
-                              <span>No compatible</span>
+                              <span>No compatible con tu selección actual</span>
                             </div>
                           )}
                           
+                          {isNotAvailable && !isIncompatible && (
+                            <div className="mt-2 flex items-center text-gray-500 text-sm bg-gray-50 p-2 rounded border border-gray-200">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              <span>Ya has seleccionado otra opción</span>
+                            </div>
+                          )}
+
                           {isSelected && (
                             <div className="absolute top-3 right-3 bg-primary text-white rounded-full w-6 h-6 flex items-center justify-center">
                               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                            </div>
+                          )}
+
+                          {/* Añadir un icono de prohibido para opciones incompatibles */}
+                          {isIncompatible && (
+                            <div className="absolute top-3 right-3 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </div>
+                          )}
+
+                          {/* Ícono para opciones no disponibles por tener otra opción seleccionada */}
+                          {isNotAvailable && !isIncompatible && (
+                            <div className="absolute top-3 right-3 bg-gray-400 text-white rounded-full w-6 h-6 flex items-center justify-center">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                               </svg>
                             </div>
                           )}

@@ -91,8 +91,22 @@ def validate_compatibility(request: dict, db: Session = Depends(get_db)):
     Valida si un conjunto de opciones seleccionadas son compatibles entre sí.
     """
     selected_options = request.get("selected_options", [])
-    print(f"Validando compatibilidad para opciones: {selected_options}")
-    result = product_service.validate_compatibility(db, selected_options)
+    product_id = request.get("product_id")
+    
+    # Si no se proporciona product_id, intentamos obtenerlo de las opciones seleccionadas
+    if product_id is None and selected_options:
+        product_id = product_service.get_product_id_from_options(db, selected_options)
+        print(f"Producto inferido de las opciones: {product_id}")
+    
+    print(f"Validando compatibilidad para producto {product_id} con opciones: {selected_options}")
+    
+    if product_id is None:
+        # Modo de compatibilidad anterior
+        result = product_service.validate_compatibility(db, None, selected_options)
+    else:
+        # Usar el nuevo modo con ID de producto
+        result = product_service.validate_compatibility(db, product_id, selected_options)
+    
     return result
 
 @router.post("/products/calculate-price")
@@ -103,21 +117,135 @@ def calculate_price(request: dict, db: Session = Depends(get_db)):
     El frontend debe sumar el precio base del producto para obtener el precio total final.
     """
     selected_options = request.get("selected_options", [])
-    print(f"Calculando precio para opciones: {selected_options}")
+    product_id = request.get("product_id")
+    
+    # Si no se proporciona product_id, intentamos obtenerlo de las opciones seleccionadas
+    if product_id is None and selected_options:
+        product_id = product_service.get_product_id_from_options(db, selected_options)
+        print(f"Producto inferido de las opciones: {product_id}")
+    
+    print(f"Calculando precio para producto {product_id} con opciones: {selected_options}")
     
     # Primero validar compatibilidad
-    compatibility_result = product_service.validate_compatibility(db, selected_options)
-    if not compatibility_result["is_compatible"]:
-        details = compatibility_result["incompatibility_details"]
+    if product_id is None:
+        # Modo de retrocompatibilidad
+        compatibility_result = product_service.validate_compatibility(db, None, selected_options)
+    else:
+        # Usar el nuevo modo con ID de producto
+        compatibility_result = product_service.validate_compatibility(db, product_id, selected_options)
+        # Si usamos el nuevo formato, necesitamos extraer el resultado de compatibilidad
+        # Esto es temporal hasta que actualizemos todos los clientes
+        if "product" in compatibility_result:
+            # Convertimos el nuevo formato al formato anterior
+            is_compatible = True
+            incompatibility_details = None
+            problem_option = None
+            
+            # Recorremos todos los componentes y opciones para verificar compatibilidad
+            for component in compatibility_result["product"]["components"]:
+                for option in component["options"]:
+                    if option["selected"] and not option["is_compatible"]:
+                        is_compatible = False
+                        problem_option = option
+                        
+                        # Intentamos determinar el tipo de incompatibilidad
+                        incompatibility_type = "unknown"
+                        # Buscamos dependencias de tipo "requires" para esta opción
+                        dependencies = db.query(product_service.OptionDependency).filter(
+                            product_service.OptionDependency.option_id == option["id"],
+                            product_service.OptionDependency.type == product_service.DependencyType.requires
+                        ).all()
+                        
+                        # Si tiene dependencias de tipo "requires", verificamos si alguna falta
+                        for dependency in dependencies:
+                            if dependency.depends_on_option_id not in selected_options:
+                                incompatibility_type = "requires"
+                                # Obtener el nombre de la opción requerida
+                                required_option = db.query(product_service.PartOption).filter(
+                                    product_service.PartOption.id == dependency.depends_on_option_id
+                                ).first()
+                                
+                                # Guardar información detallada sobre la incompatibilidad
+                                incompatibility_details = {
+                                    "type": "requires",
+                                    "option_id": option["id"],
+                                    "option_name": option["name"],
+                                    "required_option_id": dependency.depends_on_option_id,
+                                    "required_option_name": required_option.name if required_option else f"Opción {dependency.depends_on_option_id}"
+                                }
+                                break
+                                
+                        # Si no encontramos una incompatibilidad de tipo "requires", buscamos de tipo "excludes"
+                        if incompatibility_type == "unknown":
+                            # Buscamos dependencias de tipo "excludes" para esta opción
+                            excludes_dependencies = db.query(product_service.OptionDependency).filter(
+                                product_service.OptionDependency.option_id == option["id"],
+                                product_service.OptionDependency.type == product_service.DependencyType.excludes
+                            ).all()
+                            
+                            # Verificamos si alguna de las opciones excluidas está seleccionada
+                            for dependency in excludes_dependencies:
+                                if dependency.depends_on_option_id in selected_options:
+                                    incompatibility_type = "excludes"
+                                    # Obtener el nombre de la opción excluida
+                                    excluded_option = db.query(product_service.PartOption).filter(
+                                        product_service.PartOption.id == dependency.depends_on_option_id
+                                    ).first()
+                                    
+                                    # Guardar información detallada sobre la incompatibilidad
+                                    incompatibility_details = {
+                                        "type": "excludes",
+                                        "option_id": option["id"],
+                                        "option_name": option["name"],
+                                        "excluded_option_id": dependency.depends_on_option_id,
+                                        "excluded_option_name": excluded_option.name if excluded_option else f"Opción {dependency.depends_on_option_id}"
+                                    }
+                                    break
+                        
+                        # Si aún no hemos identificado el tipo de incompatibilidad, usamos un tipo genérico
+                        if incompatibility_type == "unknown" and incompatibility_details is None:
+                            incompatibility_details = {
+                                "type": "unknown",
+                                "option_id": option["id"],
+                                "option_name": option["name"]
+                            }
+                        
+                        break
+                if not is_compatible:
+                    break
+            
+            # Agregamos información adicional para ayudar a depurar
+            print(f"Compatibilidad de opciones: {is_compatible}")
+            if not is_compatible and problem_option:
+                print(f"Opción problemática: {problem_option['name']} (ID: {problem_option['id']})")
+            
+            compatibility_result = {
+                "is_compatible": is_compatible,
+                "incompatibility_details": incompatibility_details
+            }
+    
+    # Verificar si hay incompatibilidades
+    if not compatibility_result.get("is_compatible", False):
+        # Extraer los detalles o usar un mensaje genérico si no hay detalles
+        details = compatibility_result.get("incompatibility_details", None)
+        
         if details:
             message = f"Incompatibilidad: "
-            if details["type"] == "excludes":
+            if details.get("type") == "excludes":
                 message += f"La opción '{details['option_name']}' no es compatible con '{details['excluded_option_name']}'"
-            elif details["type"] == "requires":
+            elif details.get("type") == "requires":
                 message += f"La opción '{details['option_name']}' requiere '{details['required_option_name']}'"
+            else:
+                message += f"La opción '{details['option_name']}' presenta incompatibilidades"
+            
+            print(f"Error de compatibilidad: {message}")
             raise HTTPException(status_code=400, detail=message)
         else:
+            print("Las opciones seleccionadas no son compatibles (sin detalles específicos)")
             raise HTTPException(status_code=400, detail="Las opciones seleccionadas no son compatibles")
+    
+    # Si llegamos aquí, las opciones son compatibles
+    print("Opciones compatibles, calculando precio...")
     
     total_price = product_service.calculate_price(db, selected_options)
     print(f"Precio adicional total: {total_price}")

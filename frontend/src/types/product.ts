@@ -24,6 +24,8 @@ export interface PartOption {
   in_stock?: boolean;
   part_type_id?: number;
   is_compatible?: boolean;
+  available_for_selection?: boolean;
+  availability_reason?: string;
   dependencies?: OptionDependency[];
   conditional_prices?: ConditionalPrice[];
 }
@@ -54,6 +56,9 @@ export interface AvailableOption {
   name: string;
   base_price: number;
   is_compatible: boolean;
+  available_for_selection?: boolean;
+  selected?: boolean;
+  availability_reason?: string;
 }
 
 export interface AvailablePartType {
