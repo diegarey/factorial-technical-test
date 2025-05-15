@@ -23,6 +23,25 @@ This project is a solution for Marcus's bicycle shop, enabling online sales of f
 - Admin panel
 - Shopping cart
 
+## Technology Stack
+
+### Backend
+- **FastAPI**: High-performance Python framework for building APIs
+- **SQLAlchemy**: SQL toolkit and ORM for database interactions
+- **PostgreSQL**: Powerful, open-source relational database
+- **Pydantic**: Data validation and settings management
+- **Pytest**: Testing framework for automated tests
+
+### Frontend
+- **Next.js**: React framework for production-grade applications
+- **React**: JavaScript library for building user interfaces
+- **Tailwind CSS**: Utility-first CSS framework for custom designs
+- **TypeScript**: Strongly typed programming language that builds on JavaScript
+
+### Infrastructure
+- **Docker**: Containerization for consistent deployment
+- **Docker Compose**: Multi-container Docker application orchestration
+
 ## Data Model
 
 The system uses a relational data model optimized for product customization:
@@ -50,16 +69,20 @@ The system uses a relational data model optimized for product customization:
 - Parts compatibility validation
 - Dynamic price calculation based on configurations
 - Data management through SQLAlchemy
+- Versioned API design (v1)
+- CORS configuration for secure cross-origin requests
 
 ### Frontend (Next.js)
 - Interfaces for exploring products
 - Bicycle configurator with real-time validation
 - Shopping cart
 - Responsive design with Tailwind CSS
+- Client-side state management
 
 ### Database (PostgreSQL)
 - Relational storage for products, parts, and dependencies
 - Cart and order records
+- Transactional operations for data integrity
 
 ## Main User Actions
 
@@ -149,13 +172,19 @@ docker compose exec backend pytest
 │   │   ├── models/        # Data models
 │   │   ├── schemas/       # Pydantic schemas
 │   │   ├── services/      # Business logic
+│   │   ├── db/            # Database setup
+│   │   ├── core/          # Core functionality
 │   │   └── main.py        # Entry point
+│   ├── tests/             # Test cases
 │   └── Dockerfile
 ├── frontend/              # Next.js Application
 │   ├── src/
 │   │   ├── app/           # Next.js pages
 │   │   ├── components/    # React components
 │   │   ├── api/           # API clients
+│   │   ├── store/         # State management
+│   │   ├── hooks/         # Custom React hooks
+│   │   ├── config/        # Configuration
 │   │   └── types/         # TypeScript types
 │   └── Dockerfile
 ├── docker-compose.yml     # Docker configuration
@@ -175,3 +204,16 @@ docker compose exec backend pytest
 ### Dockerization
 - Ensures consistency between development and production environments
 - Simplifies deployment
+
+## Future Improvements
+
+### Authentication & Authorization
+- Implement user authentication system with JWT
+- Role-based access control for admin pages
+- Secure the admin API routes with proper middleware
+
+### User Management
+- Customer accounts and profiles
+- Order history and tracking
+- Saved bicycle configurations
+
