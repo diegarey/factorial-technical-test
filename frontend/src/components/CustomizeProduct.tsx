@@ -206,19 +206,29 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
     // Capturar las selecciones actuales para hacer logging después
     const prevSelections = {...selectedOptions};
     
-    // Actualizar las opciones seleccionadas
+    // Actualizar las opciones seleccionadas - permitir deseleccionar
     setSelectedOptions(prev => {
-      const newSelection = {
-        ...prev,
-        [partTypeId]: optionId,
-      };
-      console.log('Nueva selección:', newSelection);
+      // Si la opción ya está seleccionada, la deseleccionamos
+      if (prev[partTypeId] === optionId) {
+        const newSelection = {...prev};
+        delete newSelection[partTypeId];
+        console.log('Opción deseleccionada:', optionId);
+        console.log('Nueva selección:', newSelection);
+        return newSelection;
+      } else {
+        // Si no está seleccionada, la seleccionamos
+        const newSelection = {
+          ...prev,
+          [partTypeId]: optionId,
+        };
+        console.log('Nueva selección:', newSelection);
 
-      // Para detectar específicamente si estamos seleccionando Aro Rojo
-      if (selectedOption && selectedOption.name === "Aro Rojo") {
-        console.log("IDs de opciones después de seleccionar Aro Rojo:", Object.values(newSelection));
+        // Para detectar específicamente si estamos seleccionando Aro Rojo
+        if (selectedOption && selectedOption.name === "Aro Rojo") {
+          console.log("IDs de opciones después de seleccionar Aro Rojo:", Object.values(newSelection));
+        }
+        return newSelection;
       }
-      return newSelection;
     });
     
     // No recalculamos el precio aquí porque el useEffect se encargará de ello
@@ -481,7 +491,10 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
                             ${(isIncompatible || isNotAvailable) ? 'opacity-75 cursor-not-allowed' : 'cursor-pointer'}
                           `}
                           onClick={() => {
-                            if (!isIncompatible && !isNotAvailable) {
+                            if (isSelected) {
+                              // Permitir deselección si ya está seleccionada
+                              handleOptionSelect(partType.id, option.id);
+                            } else if (!isIncompatible && !isNotAvailable) {
                               handleOptionSelect(partType.id, option.id);
                             } else if (isNotAvailable) {
                               alert(`Ya has seleccionado otra opción de ${partType.name}. Debes deseleccionar esa opción primero.`);
@@ -536,15 +549,6 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
                             <div className="absolute top-3 right-3 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center">
                               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                              </svg>
-                            </div>
-                          )}
-
-                          {/* Ícono para opciones no disponibles por tener otra opción seleccionada */}
-                          {isNotAvailable && !isIncompatible && (
-                            <div className="absolute top-3 right-3 bg-gray-400 text-white rounded-full w-6 h-6 flex items-center justify-center">
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                               </svg>
                             </div>
                           )}
@@ -629,9 +633,23 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
                           </div>
                         </div>
                         {selectedOptionId && (
-                          <span className="font-bold text-primary">
-                            +€{selectedOptionPrice ? selectedOptionPrice.toFixed(2) : '0.00'}
-                          </span>
+                          <div className="flex items-center">
+                            <span className="font-bold text-primary mr-2">
+                              +€{selectedOptionPrice ? selectedOptionPrice.toFixed(2) : '0.00'}
+                            </span>
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation(); // Evitar que se active el onClick del contenedor
+                                handleOptionSelect(partType.id, selectedOptionId);
+                              }}
+                              className="text-gray-400 hover:text-red-500 transition-colors"
+                              title="Deseleccionar opción"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </div>
                         )}
                       </div>
                     </div>
