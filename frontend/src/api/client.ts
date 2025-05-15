@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { getApiUrl } from '../config/api';
 
-console.log(`Usando API URL: ${getApiUrl('')}`);
+console.log(`Using API URL: ${getApiUrl('')}`);
 
 const apiClient = axios.create({
   baseURL: getApiUrl(''),
@@ -9,19 +9,19 @@ const apiClient = axios.create({
     'Content-Type': 'application/json',
     'Accept': 'application/json'
   },
-  timeout: 30000, // Aumentado el timeout a 30 segundos
-  withCredentials: true // Habilitar el envío de cookies
+  timeout: 30000, // Increased timeout to 30 seconds
+  withCredentials: true // Enable sending cookies
 });
 
-// Interceptor para solicitudes
+// Request interceptor
 apiClient.interceptors.request.use(
   (config) => {
-    // Log detallado de todas las solicitudes
-    console.log('Realizando solicitud:', {
+    // Detailed log of all requests
+    console.log('Making request:', {
       method: config.method?.toUpperCase(),
       url: config.url,
       baseURL: config.baseURL,
-      fullUrl: config.url, // La URL ya es completa
+      fullUrl: config.url, // URL is already complete
       params: config.params,
       data: config.data,
       headers: config.headers,
@@ -30,43 +30,43 @@ apiClient.interceptors.request.use(
     return config;
   },
   (error) => {
-    console.error('Error en la solicitud:', error);
+    console.error('Error in request:', error);
     return Promise.reject(error);
   }
 );
 
-// Interceptor para respuestas
+// Response interceptor
 apiClient.interceptors.response.use(
   (response) => {
-    // Procesamiento de respuestas exitosas
-    console.log('Respuesta exitosa:', {
+    // Processing successful responses
+    console.log('Successful response:', {
       status: response.status, 
       url: response.config.url,
       data: response.data,
-      cookies: document.cookie // Log de cookies para depuración
+      cookies: document.cookie // Cookie log for debugging
     });
     return response;
   },
   (error) => {
-    // Manejo de errores de respuesta mejorado
+    // Enhanced response error handling
     if (error.response) {
-      // El servidor respondió con un código de estado diferente de 2xx
-      console.error('Error de respuesta:', error.response.status, error.response.data);
-      console.error('URL que falló:', error.config.url);
-      console.error('Método:', error.config.method?.toUpperCase());
-      console.error('Datos enviados:', error.config.data);
-      console.error('Parámetros enviados:', error.config.params);
+      // The server responded with a status code different from 2xx
+      console.error('Response error:', error.response.status, error.response.data);
+      console.error('Failed URL:', error.config.url);
+      console.error('Method:', error.config.method?.toUpperCase());
+      console.error('Sent data:', error.config.data);
+      console.error('Sent parameters:', error.config.params);
     } else if (error.request) {
-      // La solicitud se hizo pero no se recibió respuesta
+      // The request was made but no response was received
       const fullUrl = error.config.url;
-      console.error('No se recibió respuesta del servidor:', {
+      console.error('No response received from server:', {
         url: fullUrl,
         method: error.config.method?.toUpperCase(),
         timeout: error.config.timeout
       });
     } else {
-      // Algo ocurrió durante la configuración de la solicitud
-      console.error('Error durante la configuración de la solicitud:', error.message);
+      // Something happened during request setup
+      console.error('Error during request setup:', error.message);
     }
     return Promise.reject(error);
   }

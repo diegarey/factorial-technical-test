@@ -4,7 +4,7 @@
 
 :root {
   --foreground-rgb: 0, 0, 0;
-  --background-rgb: 255, 246, 233; /* Fondo crema similar al de Factorial */
+  --background-rgb: 255, 246, 233; /* Cream background similar to Factorial */
 }
 
 body {
@@ -53,7 +53,7 @@ body {
   }
 }
 
-/* Agregar una transición suave para todos los elementos interactivos */
+/* Add a smooth transition for all interactive elements */
 a, button {
   @apply transition-all duration-200;
 } 

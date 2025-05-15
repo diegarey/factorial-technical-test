@@ -1,44 +1,44 @@
-# API Cliente - Documentación
+# API Client - Documentation
 
-## Estructura
+## Structure
 
-La integración con la API está organizada siguiendo estos principios:
+The API integration is organized following these principles:
 
-- **Arquitectura modular**: Cada recurso de la API tiene su propio archivo de cliente.
-- **Configuración centralizada**: La configuración como URLs y versiones está en `src/config/api.ts`.
-- **Compatibilidad con versiones**: Todas las peticiones incluyen la versión de la API.
+- **Modular architecture**: Each API resource has its own client file.
+- **Centralized configuration**: Configuration such as URLs and versions is in `src/config/api.ts`.
+- **Version compatibility**: All requests include the API version.
 
-## Archivos principales
+## Main files
 
-- `client.ts`: Cliente base de Axios con configuración e interceptores.
-- `productsApi.ts`: Operaciones relacionadas con productos.
-- `cartApi.ts`: Operaciones relacionadas con el carrito.
-- `../config/api.ts`: Configuración centralizada.
+- `client.ts`: Base Axios client with configuration and interceptors.
+- `productsApi.ts`: Product-related operations.
+- `cartApi.ts`: Cart-related operations.
+- `../config/api.ts`: Centralized configuration.
 
-## Versionado
+## Versioning
 
-El versionado de la API se implementa de la siguiente manera:
+API versioning is implemented as follows:
 
-1. La versión actual de la API se define en `src/config/api.ts` como `API_VERSION`.
-2. Todas las peticiones usan `getApiUrl()` para construir URLs con la versión correcta.
-3. Se puede activar/desactivar el versionado explícito con `USE_VERSIONED_ENDPOINTS`.
+1. The current API version is defined in `src/config/api.ts` as `API_VERSION`.
+2. All requests use `getApiUrl()` to build URLs with the correct version.
+3. Explicit versioning can be enabled/disabled with `USE_VERSIONED_ENDPOINTS`.
 
-## Ejemplos de uso
+## Usage examples
 
-### Llamada básica a la API
+### Basic API call
 
 ```typescript
 import { getApiUrl } from '../config/api';
 import apiClient from './client';
 
-// Ejemplo para obtener recursos
+// Example to get resources
 const getItems = async () => {
-  // Genera: /api/v1/items
+  // Generates: /api/v1/items
   const response = await apiClient.get(getApiUrl('items'));
   return response.data;
 };
 
-// Ejemplo con parámetros de consulta
+// Example with query parameters
 const searchItems = async (query: string) => {
   const response = await apiClient.get(getApiUrl('items'), {
     params: { search: query }
@@ -46,28 +46,28 @@ const searchItems = async (query: string) => {
   return response.data;
 };
 
-// Ejemplo con ID en la URL
+// Example with ID in the URL
 const getItemDetail = async (id: number) => {
   const response = await apiClient.get(getApiUrl(`items/${id}`));
   return response.data;
 };
 ```
 
-## Manejo de cambios de versión
+## Handling version changes
 
-Cuando la API introduce una nueva versión, solo necesitas actualizar `API_VERSION` en `config/api.ts`. Si se requieren cambios estructurales en las peticiones, puedes:
+When the API introduces a new version, you only need to update `API_VERSION` in `config/api.ts`. If structural changes in requests are required, you can:
 
-1. Mantener compatibilidad hacia atrás manteniendo los métodos actuales.
-2. Añadir nuevos métodos con el sufijo `V2` para las nuevas características.
-3. Adaptar los datos entre versiones en el cliente para minimizar cambios en componentes.
+1. Maintain backward compatibility by keeping current methods.
+2. Add new methods with the `V2` suffix for new features.
+3. Adapt data between versions in the client to minimize changes in components.
 
-## Depuración
+## Debugging
 
-El cliente incluye logs detallados para solicitudes y respuestas. Estos logs están habilitados por defecto y muestran:
+The client includes detailed logs for requests and responses. These logs are enabled by default and show:
 
-- URLs completas con versión
-- Parámetros enviados
-- Datos de respuesta
-- Errores con detalles
+- Complete URLs with version
+- Sent parameters
+- Response data
+- Errors with details
 
-Para deshabilitar logs en producción, configura interceptores condicionales en `client.ts`.
+To disable logs in production, configure conditional interceptors in `client.ts`.

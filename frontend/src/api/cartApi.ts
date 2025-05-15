@@ -5,7 +5,7 @@ import { getApiUrl } from '../config/api';
 export interface CartItem {
   id: number;
   product_id: number;
-  price_snapshot: number | string; // Puede venir como string desde la API
+  price_snapshot: number | string; // Can come as string from the API
   quantity: number;
   options: {
     id: number;
@@ -22,32 +22,32 @@ export interface Cart {
 
 const LOCAL_STORAGE_CART_ID_KEY = 'marcus_bikes_cart_id';
 
-// Función para guardar el ID del carrito en localStorage
+// Function to save the cart ID in localStorage
 const saveCartIdToLocalStorage = (cartId: number) => {
   try {
     localStorage.setItem(LOCAL_STORAGE_CART_ID_KEY, cartId.toString());
-    console.log(`ID del carrito guardado en localStorage: ${cartId}`);
+    console.log(`Cart ID saved in localStorage: ${cartId}`);
   } catch (e) {
-    console.warn('No se pudo guardar el ID del carrito en localStorage:', e);
+    console.warn('Could not save cart ID in localStorage:', e);
   }
 };
 
-// Función para obtener el ID del carrito desde localStorage
+// Function to get the cart ID from localStorage
 const getCartIdFromLocalStorage = (): number | null => {
   try {
     const cartId = localStorage.getItem(LOCAL_STORAGE_CART_ID_KEY);
     if (cartId) {
       const cartIdNum = parseInt(cartId, 10);
-      console.log(`ID del carrito recuperado de localStorage: ${cartIdNum}`);
+      console.log(`Cart ID retrieved from localStorage: ${cartIdNum}`);
       return cartIdNum;
     }
   } catch (e) {
-    console.warn('No se pudo obtener el ID del carrito desde localStorage:', e);
+    console.warn('Could not get cart ID from localStorage:', e);
   }
   return null;
 };
 
-// Función para normalizar los datos del carrito
+// Function to normalize cart data
 const normalizeCartData = (cartData: any): Cart => {
   if (!cartData) {
     return {
@@ -58,11 +58,11 @@ const normalizeCartData = (cartData: any): Cart => {
     };
   }
   
-  // Convertir items
+  // Convert items
   const normalizedItems = Array.isArray(cartData.items) 
     ? cartData.items.map((item: any) => ({
         ...item,
-        // Asegurar que price_snapshot sea un número
+        // Ensure price_snapshot is a number
         price_snapshot: typeof item.price_snapshot === 'number' 
           ? item.price_snapshot 
           : parseFloat(String(item.price_snapshot)) || 0
@@ -79,35 +79,35 @@ const normalizeCartData = (cartData: any): Cart => {
 
 export const CartApi = {
   /**
-   * Obtiene el carrito del usuario actual
+   * Gets the current user's cart
    */
   getCart: async (): Promise<Cart> => {
     try {
       const cartIdFromStorage = getCartIdFromLocalStorage();
-      console.log('ID del carrito en localStorage antes de la solicitud:', cartIdFromStorage);
+      console.log('Cart ID in localStorage before request:', cartIdFromStorage);
 
-      // Obtener el carrito del servidor incluyendo el ID de localStorage como parámetro query_cart_id
+      // Get the cart from the server including localStorage ID as query_cart_id parameter
       const response = await apiClient.get(getApiUrl('cart'), {
         params: cartIdFromStorage ? { query_cart_id: cartIdFromStorage } : undefined
       });
       
       const cart = response.data;
       
-      // Guardar el ID del carrito en localStorage
+      // Save the cart ID in localStorage
       if (cart && cart.id) {
         saveCartIdToLocalStorage(cart.id);
-        console.log(`ID del carrito actualizado en localStorage: ${cart.id}`);
+        console.log(`Cart ID updated in localStorage: ${cart.id}`);
       }
       
       return normalizeCartData(cart);
     } catch (error) {
-      console.error('Error al obtener el carrito:', error);
+      console.error('Error getting cart:', error);
       throw error;
     }
   },
 
   /**
-   * Añade un producto al carrito
+   * Adds a product to the cart
    */
   addToCart: async (request: AddToCartRequest): Promise<{ cart_item_id: number }> => {
     try {
@@ -117,14 +117,14 @@ export const CartApi = {
         quantity: request.quantity
       };
       
-      console.log('---- INICIANDO AÑADIR AL CARRITO ----');
-      console.log('Datos a enviar al carrito:', requestBody);
+      console.log('---- STARTING ADD TO CART ----');
+      console.log('Data to send to cart:', requestBody);
       
-      // Obtener el ID del carrito de localStorage
+      // Get cart ID from localStorage
       const cartIdFromStorage = getCartIdFromLocalStorage();
-      console.log('ID del carrito en localStorage:', cartIdFromStorage);
+      console.log('Cart ID in localStorage:', cartIdFromStorage);
       
-      // Realizar la solicitud incluyendo el query_cart_id como parámetro si existe
+      // Make the request including query_cart_id as parameter if it exists
       const response = await apiClient.post(
         getApiUrl('cart/items'),
         requestBody,
@@ -133,47 +133,47 @@ export const CartApi = {
         }
       );
       
-      console.log('Respuesta de añadir al carrito:', response.data);
+      console.log('Add to cart response:', response.data);
       
-      // Si la respuesta incluye un nuevo ID de carrito, actualizarlo en localStorage
+      // If the response includes a new cart ID, update it in localStorage
       if (response.data && response.data.cart_id) {
         saveCartIdToLocalStorage(response.data.cart_id);
-        console.log(`ID del carrito actualizado en localStorage: ${response.data.cart_id}`);
+        console.log(`Cart ID updated in localStorage: ${response.data.cart_id}`);
       }
       
-      console.log('---- FINALIZADO AÑADIR AL CARRITO ----');
+      console.log('---- FINISHED ADD TO CART ----');
       return response.data;
     } catch (error) {
-      console.error('Error al añadir al carrito:', error);
+      console.error('Error adding to cart:', error);
       throw error;
     }
   },
 
   /**
-   * Actualiza la cantidad de un producto en el carrito
+   * Updates the quantity of a product in the cart
    */
   updateCartItemQuantity: async (itemId: number, quantity: number): Promise<CartItem> => {
     try {
-      console.log(`Actualizando cantidad del ítem ${itemId} a ${quantity}`);
+      console.log(`Updating item ${itemId} quantity to ${quantity}`);
       const response = await apiClient.put(getApiUrl(`cart/items/${itemId}`), null, {
         params: { quantity }
       });
       return response.data.cart_item;
     } catch (error) {
-      console.error('Error al actualizar ítem del carrito:', error);
+      console.error('Error updating cart item:', error);
       throw error;
     }
   },
 
   /**
-   * Elimina un producto del carrito
+   * Removes a product from the cart
    */
   removeCartItem: async (itemId: number): Promise<void> => {
     try {
-      console.log(`Eliminando ítem ${itemId} del carrito`);
+      console.log(`Removing item ${itemId} from cart`);
       await apiClient.delete(getApiUrl(`cart/items/${itemId}`));
     } catch (error) {
-      console.error('Error al eliminar ítem del carrito:', error);
+      console.error('Error removing cart item:', error);
       throw error;
     }
   }

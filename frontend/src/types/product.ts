@@ -50,7 +50,7 @@ export interface Product {
   partTypes: PartType[];
 }
 
-// Interfaz para las opciones disponibles para un producto específico
+// Interface for available options for a specific product
 export interface AvailableOption {
   id: number;
   name: string;
@@ -67,7 +67,7 @@ export interface AvailablePartType {
   options: AvailableOption[];
 }
 
-// Interfaz para la solicitud de añadir al carrito
+// Interface for add to cart request
 export interface AddToCartRequest {
   product_id: number;
   selected_options: number[];
