@@ -8,7 +8,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import DependencyEditor from '@/components/DependencyEditor';
 
-// Componente para editar un tipo de parte
+// Component for editing a part type
 const PartTypeEditor = ({ 
   partType,
   partTypeIndex, 
@@ -49,7 +49,7 @@ const PartTypeEditor = ({
 
   const handleAddOption = () => {
     const newOption: PartOption = {
-      id: Math.floor(Math.random() * -1000), // ID negativo temporal para nuevas opciones
+      id: Math.floor(Math.random() * -1000), // Temporary negative ID for new options
       name: 'Nueva opción',
       base_price: 0,
       part_type_id: partType.id,
@@ -272,12 +272,12 @@ export default function EditProductPage({ params }: PageProps) {
     const partType = product.partTypes[index];
     
     try {
-      // Si el tipo de parte tiene un ID positivo (existe en el backend), eliminarlo
+      // If the part type has a positive ID (exists in the backend), delete it
       if (partType.id > 0) {
         await ProductsApi.deletePartType(partType.id);
       }
       
-      // Actualizar el estado local
+      // Update local state
       const updatedPartTypes = [...product.partTypes];
       updatedPartTypes.splice(index, 1);
       
@@ -298,12 +298,12 @@ export default function EditProductPage({ params }: PageProps) {
     const option = partType.options[optionIndex];
     
     try {
-      // Si la opción tiene un ID positivo (existe en el backend), eliminarla
+      // If the option has a positive ID (exists in the backend), delete it
       if (option.id > 0) {
         await ProductsApi.deletePartOption(partType.id, option.id);
       }
       
-      // Actualizar el estado local
+      // Update local state
       const updatedPartTypes = [...product.partTypes];
       const updatedOptions = [...updatedPartTypes[partTypeIndex].options];
       updatedOptions.splice(optionIndex, 1);
@@ -326,7 +326,7 @@ export default function EditProductPage({ params }: PageProps) {
     if (!product) return;
     
     const newPartType: PartType = {
-      id: Math.floor(Math.random() * -1000), // ID negativo temporal para nuevos tipos
+      id: Math.floor(Math.random() * -1000), // Temporary negative ID for new types
       name: 'Nuevo componente',
       product_id: product.id,
       options: []
@@ -345,7 +345,7 @@ export default function EditProductPage({ params }: PageProps) {
     setError(null);
     
     try {
-      // Preparar datos para enviar al backend
+      // Prepare data to send to the backend
       const productData = {
         name: product.name,
         category: product.category,
@@ -356,17 +356,17 @@ export default function EditProductPage({ params }: PageProps) {
         image: product.image
       };
       
-      // Actualizar producto
+      // Update product
       const updatedProduct = await ProductsApi.updateProduct(productId, productData);
       
-      // Manejar tipos de partes y opciones
+      // Handle part types and options
       const updatedPartTypes = [...product.partTypes];
       
       for (let i = 0; i < updatedPartTypes.length; i++) {
         const partType = updatedPartTypes[i];
         let currentPartTypeId = partType.id;
         
-        // Si es un nuevo tipo de parte (ID negativo)
+        // If it's a new part type (negative ID)
         if (partType.id < 0) {
           const newPartType = {
             name: partType.name,
@@ -375,14 +375,14 @@ export default function EditProductPage({ params }: PageProps) {
           const savedPartType = await ProductsApi.addPartType(productId, newPartType);
           currentPartTypeId = savedPartType.id;
           
-          // Actualizar el ID en el estado local
+          // Update ID in local state
           updatedPartTypes[i] = {
             ...partType,
             id: currentPartTypeId
           };
         }
         
-        // Guardar las opciones nuevas (con ID negativo) para este tipo de parte
+        // Save new options (with negative ID) for this part type
         const updatedOptions = [...partType.options];
         
         for (let j = 0; j < updatedOptions.length; j++) {
@@ -395,7 +395,7 @@ export default function EditProductPage({ params }: PageProps) {
             };
             const savedOption = await ProductsApi.addPartOption(currentPartTypeId, newOption);
             
-            // Actualizar el ID en el estado local
+            // Update ID in local state
             updatedOptions[j] = {
               ...option,
               id: savedOption.id,
@@ -404,14 +404,14 @@ export default function EditProductPage({ params }: PageProps) {
           }
         }
         
-        // Actualizar las opciones en el tipo de parte
+        // Update options in part type
         updatedPartTypes[i] = {
           ...updatedPartTypes[i],
           options: updatedOptions
         };
       }
       
-      // Actualizar el estado local con los nuevos IDs
+      // Update local state with new IDs
       setProduct({
         ...product,
         partTypes: updatedPartTypes
@@ -419,7 +419,7 @@ export default function EditProductPage({ params }: PageProps) {
       
       alert('Producto actualizado correctamente');
       
-      // Recargar el producto para asegurarnos de tener los datos más recientes
+      // Reload the product to ensure we have the most recent data
       await loadProduct();
     } catch (error) {
       console.error('Error al guardar los cambios:', error);
@@ -437,7 +437,7 @@ export default function EditProductPage({ params }: PageProps) {
     try {
       const response = await ProductsApi.createDependency(productId, dependency);
       
-      // Transformar la respuesta del backend al formato esperado por el frontend
+      // Transform backend response to the format expected by the frontend
       const newDependency = {
         id: response.id,
         optionId: response.option_id,
@@ -516,9 +516,9 @@ export default function EditProductPage({ params }: PageProps) {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Columna de información básica */}
+        {/* Basic information column */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Información básica */}
+          {/* Basic information */}
           <div className="bg-white rounded-xl shadow p-6">
             <h2 className="text-xl font-bold text-gray-800 mb-4">Información básica</h2>
             
@@ -622,7 +622,7 @@ export default function EditProductPage({ params }: PageProps) {
             </div>
           </div>
 
-          {/* Componentes y opciones */}
+          {/* Components and options */}
           <div className="bg-white rounded-xl shadow p-6">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold text-gray-800">Componentes y opciones</h2>
@@ -667,7 +667,7 @@ export default function EditProductPage({ params }: PageProps) {
           </div>
         </div>
 
-        {/* Columna de vista previa */}
+        {/* Preview column */}
         <div className="lg:col-span-1">
           <div className="bg-white rounded-xl shadow p-6 sticky top-8">
             <h2 className="text-xl font-bold text-gray-800 mb-4">Vista previa</h2>
@@ -743,7 +743,7 @@ export default function EditProductPage({ params }: PageProps) {
         </div>
       </div>
 
-      {/* Añadir el editor de dependencias después de la sección de componentes */}
+      {/* Add dependency editor after components section */}
       {product && product.partTypes && product.partTypes.length > 0 && (
         <div className="mt-8">
           <DependencyEditor

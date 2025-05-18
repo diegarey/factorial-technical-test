@@ -17,17 +17,17 @@ def get_cart(
     db: Session = Depends(get_db)
 ):
     """
-    Obtiene o crea un carrito.
-    Acepta el ID del carrito ya sea de la cookie o como parámetro de consulta.
+    Gets or creates a cart.
+    Accepts the cart ID either from the cookie or as a query parameter.
     """
-    # Debug para ver qué valores están llegando
+    # Debug to see what values are arriving
     print(f"DEBUG - get_cart - Headers: {query_cart_id}, Cookie cart_id: {cart_id}")
     
-    # Usar cart_id de la cookie o del parámetro de consulta
+    # Use cart_id from cookie or query parameter
     cart_id_to_use = cart_id if cart_id and cart_id != "undefined" else query_cart_id
     source = "cookie" if cart_id and cart_id != "undefined" else "query param" if query_cart_id else None
     
-    print(f"Obteniendo carrito - cookie cart_id: {cart_id}, query cart_id: {query_cart_id}, usando: {cart_id_to_use} de {source}")
+    print(f"Getting cart - cookie cart_id: {cart_id}, query cart_id: {query_cart_id}, using: {cart_id_to_use} from {source}")
     
     db_cart = None
     if cart_id_to_use:
@@ -35,26 +35,26 @@ def get_cart(
             cart_id_int = int(cart_id_to_use)
             db_cart = cart_service.get_cart(db, cart_id_int)
             if db_cart:
-                print(f"Carrito encontrado con ID: {cart_id_int}")
+                print(f"Cart found with ID: {cart_id_int}")
         except (ValueError, TypeError) as e:
-            print(f"Error al convertir cart_id: {cart_id_to_use} a entero: {e}")
+            print(f"Error converting cart_id: {cart_id_to_use} to integer: {e}")
     
-    # Si no se encontró carrito, crear uno nuevo
+    # If no cart was found, create a new one
     if not db_cart:
         db_cart = cart_service.get_or_create_cart(db, user_id)
-        print(f"Nuevo carrito creado con ID: {db_cart.id}")
+        print(f"New cart created with ID: {db_cart.id}")
     
-    # Siempre establecer la cookie con el ID del carrito actual
+    # Always set the cookie with the current cart ID
     response.set_cookie(
         key="cart_id",
         value=str(db_cart.id),
-        max_age=30*24*60*60,  # 30 días
+        max_age=30*24*60*60,  # 30 days
         httponly=False,
-        samesite="none",  # Para permitir acceso cross-origin
-        secure=True,      # Requerido cuando samesite=none
+        samesite="none",  # To allow cross-origin access
+        secure=True,      # Required when samesite=none
         path="/"
     )
-    print(f"Cookie cart_id establecida: {db_cart.id} con SameSite=None")
+    print(f"Cookie cart_id set: {db_cart.id} with SameSite=None")
     
     return db_cart
 
@@ -68,44 +68,44 @@ def add_to_cart(
     db: Session = Depends(get_db)
 ):
     """
-    Añade un producto al carrito con las opciones seleccionadas.
-    Acepta el ID del carrito ya sea de la cookie o como parámetro de consulta.
+    Adds a product to the cart with the selected options.
+    Accepts the cart ID either from the cookie or as a query parameter.
     """
-    # Debug para ver qué valores están llegando
+    # Debug to see what values are arriving
     print(f"DEBUG - add_to_cart - Headers: {query_cart_id}, Cookie cart_id: {cart_id}")
     
-    # Usar cart_id de la cookie o del parámetro de consulta
+    # Use cart_id from cookie or query parameter
     cart_id_to_use = cart_id if cart_id and cart_id != "undefined" else query_cart_id
     source = "cookie" if cart_id and cart_id != "undefined" else "query param" if query_cart_id else None
     
-    print(f"Añadiendo al carrito - cookie cart_id: {cart_id}, query cart_id: {query_cart_id}, usando: {cart_id_to_use} de {source}")
+    print(f"Adding to cart - cookie cart_id: {cart_id}, query cart_id: {query_cart_id}, using: {cart_id_to_use} from {source}")
     
-    # Validar compatibilidad de opciones
+    # Validate options compatibility
     compatibility_result = product_service.validate_compatibility(
         db, 
         product_id=request.product_id,
         selected_option_ids=request.selected_options
     )
     
-    # Comprobar si el resultado tiene la estructura esperada (el nuevo formato) o el formato antiguo
+    # Check if the result has the expected structure (the new format) or the old format
     if isinstance(compatibility_result, dict) and "product" in compatibility_result:
-        # Nuevo formato - necesitamos determinar la compatibilidad general
+        # New format - we need to determine overall compatibility
         is_compatible = True
         incompatibility_details = None
         
-        # Verificar si alguna opción seleccionada es incompatible
+        # Check if any selected option is incompatible
         for component in compatibility_result["product"]["components"]:
             for option in component["options"]:
                 if option.get("selected", False) and not option.get("is_compatible", True):
                     is_compatible = False
-                    # Intentar extraer detalles de incompatibilidad si existen
+                    # Try to extract incompatibility details if they exist
                     if "compatibility_details" in option:
                         incompatibility_details = {
                             "type": option["compatibility_details"].get("reason", "unknown"),
                             "option_name": option["name"],
                             "option_id": option["id"]
                         }
-                        # Añadir detalles específicos según el tipo de incompatibilidad
+                        # Add specific details based on the type of incompatibility
                         if option["compatibility_details"]["reason"] == "requires":
                             incompatibility_details["required_option_name"] = option["compatibility_details"]["dependency_name"]
                             incompatibility_details["required_option_id"] = option["compatibility_details"]["dependency_id"]
@@ -116,55 +116,55 @@ def add_to_cart(
             if not is_compatible:
                 break
                 
-        # Crear un objeto de resultado en el formato que espera el resto del código
+        # Create a result object in the format expected by the rest of the code
         compatibility_result = {
             "is_compatible": is_compatible,
             "incompatibility_details": incompatibility_details
         }
     
-    # Ahora usamos el objeto compatibility_result normalizado
+    # Now we use the normalized compatibility_result object
     if not compatibility_result.get("is_compatible", False):
         details = compatibility_result.get("incompatibility_details")
         if details:
-            message = f"Incompatibilidad: "
+            message = f"Incompatibility: "
             if details.get("type") == "excludes":
-                message += f"La opción '{details['option_name']}' no es compatible con '{details['excluded_option_name']}'"
+                message += f"Option '{details['option_name']}' is not compatible with '{details['excluded_option_name']}'"
             elif details.get("type") == "requires":
-                message += f"La opción '{details['option_name']}' requiere '{details['required_option_name']}'"
+                message += f"Option '{details['option_name']}' requires '{details['required_option_name']}'"
             else:
-                message += f"Hay una incompatibilidad con la opción '{details['option_name']}'"
+                message += f"There is an incompatibility with option '{details['option_name']}'"
             raise HTTPException(status_code=400, detail=message)
         else:
-            raise HTTPException(status_code=400, detail="Las opciones seleccionadas no son compatibles")
+            raise HTTPException(status_code=400, detail="The selected options are not compatible")
     
-    # Obtener o crear carrito
+    # Get or create cart
     db_cart = None
     if cart_id_to_use:
         try:
             cart_id_int = int(cart_id_to_use)
             db_cart = cart_service.get_cart(db, cart_id_int)
             if db_cart:
-                print(f"Carrito encontrado con ID: {cart_id_int}")
+                print(f"Cart found with ID: {cart_id_int}")
         except (ValueError, TypeError) as e:
-            print(f"Error al convertir cart_id: {cart_id_to_use} a entero: {e}")
+            print(f"Error converting cart_id: {cart_id_to_use} to integer: {e}")
     
     if not db_cart:
         db_cart = cart_service.get_or_create_cart(db, user_id)
-        print(f"Nuevo carrito creado con ID: {db_cart.id}")
+        print(f"New cart created with ID: {db_cart.id}")
     
-    # Siempre establecer la cookie con el ID del carrito actual
+    # Always set the cookie with the current cart ID
     response.set_cookie(
         key="cart_id",
         value=str(db_cart.id),
-        max_age=30*24*60*60,  # 30 días
+        max_age=30*24*60*60,  # 30 days
         httponly=False,
-        samesite="none",  # Para permitir acceso cross-origin
-        secure=True,      # Requerido cuando samesite=none
+        samesite="none",  # To allow cross-origin access
+        secure=True,      # Required when samesite=none
         path="/"
     )
-    print(f"Cookie cart_id establecida: {db_cart.id} con SameSite=None")
+    print(f"Cookie cart_id set: {db_cart.id} with SameSite=None")
     
-    # Añadir producto al carrito
+    # Add product to cart
     try:
         cart_item = cart_service.add_to_cart(
             db,
@@ -174,11 +174,11 @@ def add_to_cart(
             request.quantity
         )
         result = {
-            "message": "Producto añadido al carrito",
+            "message": "Product added to cart",
             "cart_item_id": cart_item.id,
             "cart_id": db_cart.id
         }
-        print(f"Producto añadido con éxito: {result}")
+        print(f"Product successfully added: {result}")
         return result
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -190,11 +190,11 @@ def update_cart_item(
     db: Session = Depends(get_db)
 ):
     """
-    Actualiza la cantidad de un ítem en el carrito.
+    Updates the quantity of an item in the cart.
     """
     try:
         cart_item = cart_service.update_cart_item_quantity(db, cart_item_id, quantity)
-        return {"message": "Cantidad actualizada", "cart_item": cart_item}
+        return {"message": "Quantity updated", "cart_item": cart_item}
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
@@ -204,10 +204,10 @@ def remove_from_cart(
     db: Session = Depends(get_db)
 ):
     """
-    Elimina un ítem del carrito.
+    Removes an item from the cart.
     """
     try:
         cart_service.remove_cart_item(db, cart_item_id)
-        return {"message": "Ítem eliminado del carrito"}
+        return {"message": "Item removed from cart"}
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e)) 

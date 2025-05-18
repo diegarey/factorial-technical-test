@@ -2,12 +2,12 @@ import apiClient from './client';
 import { Product, AvailablePartType, PartType, PartOption } from '../types/product';
 import { getApiUrl } from '../config/api';
 
-// Función de transformación para adaptar los datos del backend al formato del frontend
+// Transformation function to adapt backend data to frontend format
 const transformProductData = (data: any): Product => {
-  // Verificar si data es null o undefined
+  // Check if data is null or undefined
   if (!data) {
     console.error('Datos nulos o indefinidos pasados a transformProductData');
-    // Devolver un objeto de producto con valores por defecto
+    // Return a product object with default values
     return {
       id: 0,
       name: "Producto desconocido",
@@ -22,23 +22,23 @@ const transformProductData = (data: any): Product => {
   console.log('base_price antes de transformar:', data.base_price, typeof data.base_price);
   console.log('part_types antes de transformar:', data.part_types);
   
-  // Verificar que part_types existe y es un array
+  // Verify that part_types exists and is an array
   const partTypes = Array.isArray(data.part_types) ? data.part_types : [];
   
-  // Procesar el precio base directamente desde el backend
-  // El backend devuelve el precio base como string cuando es un Decimal
+  // Process the base price directly from the backend
+  // The backend returns the base price as string when it's a Decimal
   let basePrice = 0;
   
-  // Intentar diferentes fuentes para el precio base
+  // Try different sources for base price
   if (data.base_price !== undefined && data.base_price !== null) {
-    // Convertir a número si es string
+    // Convert to number if it's a string
     if (typeof data.base_price === 'string') {
       basePrice = parseFloat(data.base_price);
     } else if (typeof data.base_price === 'number') {
       basePrice = data.base_price;
     }
   } else if (data.basePrice !== undefined && data.basePrice !== null) {
-    // También intentar con basePrice por si ya está transformado
+    // Also try with basePrice in case it's already transformed
     if (typeof data.basePrice === 'string') {
       basePrice = parseFloat(data.basePrice);
     } else if (typeof data.basePrice === 'number') {
@@ -46,11 +46,11 @@ const transformProductData = (data: any): Product => {
     }
   }
   
-  // Validar que el precio base sea un número positivo válido
+  // Validate that the base price is a valid positive number
   if (isNaN(basePrice) || basePrice < 0) {
     console.error(`Precio base inválido recibido del backend para el producto ID=${data.id || 'desconocido'}: ${data.base_price}`);
     console.error('Se requiere un precio base válido desde el backend');
-    basePrice = 0; // Asignar 0 como valor por defecto en caso de error
+    basePrice = 0; // Assign 0 as default value in case of error
   }
   
   const transformed = {
@@ -83,7 +83,7 @@ const transformProductData = (data: any): Product => {
 
 export const ProductsApi = {
   /**
-   * Obtiene la lista de todos los productos
+   * Gets the list of all products
    */
   getProducts: async (page: number = 1, pageSize: number = 9): Promise<{products: Product[], total: number}> => {
     try {
@@ -95,27 +95,27 @@ export const ProductsApi = {
       
       console.log('Respuesta completa de productos:', response);
       
-      // Verificar si la respuesta es null o no contiene items
+      // Check if the response is null or doesn't contain items
       if (!response.data || !response.data.items) {
         console.warn('La respuesta del backend para productos es null o no tiene items:', response.data);
-        // Devolver un array vacío y total 0 para evitar errores
+        // Return an empty array and total 0 to avoid errors
         return { products: [], total: 0 };
       }
       
-      // El backend ahora devuelve un objeto con items y total
+      // The backend now returns an object with items and total
       const products = response.data.items.map(transformProductData);
       const total = response.data.total || 0;
       
       return { products, total };
     } catch (error) {
       console.error('Error al obtener productos:', error);
-      // En caso de error, devolver un array vacío para no romper la UI
+      // In case of error, return an empty array to avoid breaking the UI
       return { products: [], total: 0 };
     }
   },
 
   /**
-   * Obtiene los productos destacados
+   * Gets featured products
    */
   getFeaturedProducts: async (limit: number = 3): Promise<Product[]> => {
     console.log(`Solicitando productos destacados, límite=${limit}`);
@@ -126,7 +126,7 @@ export const ProductsApi = {
   },
 
   /**
-   * Obtiene un producto por su ID con todos los detalles
+   * Gets a product by its ID with all details
    */
   getProduct: async (productId: number): Promise<Product> => {
     console.log(`Solicitando detalles del producto ${productId}`);
@@ -138,23 +138,23 @@ export const ProductsApi = {
     } catch (error: any) {
       console.error(`Error al obtener producto ${productId}:`, error);
       
-      // En caso de error, intentar obtener información básica del producto y sus opciones
+      // In case of error, try to get basic product information and its options
       try {
-        // Intentar obtener productos para ver si podemos encontrar este producto con su precio base
+        // Try to get products to see if we can find this product with its base price
         const productsResponse = await apiClient.get(getApiUrl(`products/`), {
           params: { skip: 0, limit: 100 }
         });
         
-        // Buscar el producto en la lista
+        // Look for the product in the list
         const productFromList = productsResponse.data.items.find((item: any) => item.id === productId);
         
         if (productFromList) {
           console.log(`Producto ${productId} encontrado en la lista de productos:`, productFromList);
           
-          // Ahora obtenemos las opciones
+          // Now get the options
           const optionsResponse = await apiClient.get(getApiUrl(`products/${productId}/options`));
           
-          // Construir un producto completo con la información encontrada
+          // Build a complete product with the information found
           const fallbackProduct = transformProductData({
             ...productFromList,
             part_types: optionsResponse.data
@@ -164,16 +164,16 @@ export const ProductsApi = {
           return fallbackProduct;
         }
         
-        // Si no lo encontramos en la lista, intentar solo con las opciones
+        // If we don't find it in the list, try with just the options
         console.log(`Intentando obtener solo opciones para el producto ${productId}`);
         const optionsResponse = await apiClient.get(getApiUrl(`products/${productId}/options`));
         
-        // Construir un producto mínimo con la información disponible
+        // Build a minimal product with available information
         const minimalProduct: Product = {
           id: productId,
           name: `Producto ${productId}`,
           category: 'general',
-          basePrice: 599, // Valor por defecto razonable en caso de error
+          basePrice: 599, // Reasonable default value in case of error
           image: 'https://images.unsplash.com/photo-1576435728678-68d0fbf94e91?q=80&w=1200',
           partTypes: optionsResponse.data,
         };
@@ -183,21 +183,21 @@ export const ProductsApi = {
         return minimalProduct;
       } catch (fallbackError) {
         console.error('Error también al intentar reconstruir el producto:', fallbackError);
-        // Si también falla, propagamos el error original
+        // If it also fails, propagate the original error
         throw error;
       }
     }
   },
 
   /**
-   * Obtiene las opciones disponibles para un producto
+   * Gets available options for a product
    */
   getProductOptions: async (productId: number, selectedOptions: number[]): Promise<AvailablePartType[]> => {
     try {
-      // Si no hay opciones seleccionadas, enviamos un parámetro vacío
+      // If no options are selected, send an empty parameter
       let params: any = {};
       
-      // Solo incluir el parámetro si hay opciones seleccionadas
+      // Only include the parameter if there are selected options
       if (selectedOptions && selectedOptions.length > 0) {
         params.current_selection = selectedOptions.join(',');
       }
@@ -208,40 +208,40 @@ export const ProductsApi = {
       
       console.log('Opciones recibidas:', response.data);
       
-      // Verificar que la respuesta es un array
+      // Verify that the response is an array
       if (!Array.isArray(response.data)) {
         console.error('La respuesta de opciones no es un array:', response.data);
         return [];
       }
       
-      // La respuesta directamente es un array de PartTypes
+      // The response is directly an array of PartTypes
       return response.data;
     } catch (error) {
       console.error('Error al obtener opciones del producto:', error);
-      // En caso de error, devolver un array vacío para evitar errores en la UI
+      // In case of error, return an empty array to avoid errors in the UI
       return [];
     }
   },
 
   /**
-   * Valida si un conjunto de opciones son compatibles
+   * Validates if a set of options are compatible
    */
   validateCompatibility: async (selectedOptions: number[], productId?: number): Promise<any> => {
     try {
-      // Preparar el ID del producto
+      // Prepare the product ID
       let requestProductId = productId || null;
       
-      // Si no se proporciona ID y hay opciones seleccionadas, intentar inferir el ID
+      // If no ID is provided and there are selected options, try to infer the ID
       if (!requestProductId && selectedOptions.length > 0) {
         try {
-          // Esta lógica se implementará en el backend, así que evitamos hacer llamadas adicionales aquí
+          // This logic will be implemented in the backend, so we avoid making additional calls here
           console.log('Usando opción seleccionada para inferir el producto:', selectedOptions[0]);
         } catch (inferError) {
           console.warn('No se pudo inferir el productId a partir de las opciones seleccionadas:', inferError);
         }
       }
 
-      // Cambiar la estructura para adaptarse a lo que espera el backend
+      // Change the structure to adapt to what the backend expects
       const requestBody = {
         product_id: requestProductId,
         selected_options: selectedOptions
@@ -252,33 +252,33 @@ export const ProductsApi = {
       const response = await apiClient.post(getApiUrl('products/validate-compatibility'), requestBody);
       console.log('Respuesta de compatibilidad:', response.data);
       
-      // Devolver directamente la respuesta completa para manejarla en los componentes
+      // Return the complete response directly to handle it in components
       return response.data;
     } catch (error) {
       console.error('Error al validar compatibilidad:', error);
-      throw error; // Propagar el error en lugar de asumir compatibilidad
+      throw error; // Propagate the error instead of assuming compatibility
     }
   },
 
   /**
-   * Calcula el precio de un producto con las opciones seleccionadas
+   * Calculates the price of a product with selected options
    */
   calculatePrice: async (selectedOptions: number[]): Promise<number> => {
     try {
-      // Intentar obtener el ID del producto a partir de la primera opción seleccionada
+      // Try to get the product ID from the first selected option
       let productId = null;
       if (selectedOptions.length > 0) {
         try {
-          // Esta lógica se implementará en el backend, así que evitamos hacer llamadas adicionales aquí
+          // This logic will be implemented in the backend, so we avoid making additional calls here
           console.log('Usando opción seleccionada para inferir el producto en calculate-price:', selectedOptions[0]);
         } catch (inferError) {
           console.warn('No se pudo inferir el productId a partir de las opciones seleccionadas:', inferError);
         }
       }
 
-      // Cambiar la estructura para adaptarse a lo que espera el backend
+      // Change the structure to adapt to what the backend expects
       const requestBody = {
-        product_id: productId, // Este valor será null y el backend lo detectará y actuará en consecuencia
+        product_id: productId, // This value will be null and the backend will detect it and act accordingly
         selected_options: selectedOptions
       };
       
@@ -287,19 +287,19 @@ export const ProductsApi = {
       const response = await apiClient.post(getApiUrl('products/calculate-price'), requestBody);
       console.log('Respuesta de cálculo de precio:', response.data);
       
-      // Obtener el precio del objeto de respuesta y garantizar que sea un número válido
+      // Get the price from the response object and ensure it's a valid number
       const total_price = response.data.total_price;
       
-      // Validar y convertir el precio
+      // Validate and convert the price
       if (total_price === undefined || total_price === null) {
         console.error('La API no devolvió un valor de precio válido');
         return 0;
       }
       
-      // Convertir a número si es string
+      // Convert to number if it's a string
       const numericPrice = typeof total_price === 'string' ? parseFloat(total_price) : total_price;
       
-      // Verificar que sea un número válido
+      // Verify that it's a valid number
       if (isNaN(numericPrice)) {
         console.error('La API devolvió un precio que no se puede convertir a número:', total_price);
         return 0;
@@ -308,75 +308,75 @@ export const ProductsApi = {
       return numericPrice;
     } catch (error) {
       console.error('Error al calcular precio:', error);
-      // Si falla, devolver 0 para no romper la UI
+      // If it fails, return 0 to avoid breaking the UI
       return 0;
     }
   },
 
   /**
-   * Crea un nuevo producto
+   * Creates a new product
    */
   createProduct: async (productData: Partial<Product>): Promise<Product> => {
     try {
       console.log('Creando nuevo producto:', productData);
       
-      // Asegurarse de que el precio base esté en el formato correcto
+      // Make sure the base price is in the correct format
       const dataToSend: any = { ...productData };
       
-      // Si basePrice existe en productData, convertirlo a base_price para el backend
+      // If basePrice exists in productData, convert it to base_price for the backend
       if (dataToSend.basePrice !== undefined) {
         dataToSend.base_price = dataToSend.basePrice;
-        delete dataToSend.basePrice; // Eliminar la propiedad frontend para evitar duplicación
+        delete dataToSend.basePrice; // Remove the frontend property to avoid duplication
       }
       
-      // Si image existe en productData, convertirlo a image_url para el backend
+      // If image exists in productData, convert it to image_url for the backend
       if (dataToSend.image !== undefined) {
         dataToSend.image_url = dataToSend.image;
-        delete dataToSend.image; // Eliminar la propiedad frontend para evitar duplicación
+        delete dataToSend.image; // Remove the frontend property to avoid duplication
       }
       
       console.log('Datos formateados para enviar al backend:', dataToSend);
       
-      // Imprimir URL completa para depuración
+      // Print full URL for debugging
       const apiUrl = getApiUrl('products');
       console.log('URL de creación de producto:', apiUrl);
       
-      // Usar fetch nativo para evitar middleware y redirecciones de axios
+      // Use native fetch to avoid axios middleware and redirects
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
-        credentials: 'include', // Incluir cookies para autenticación
+        credentials: 'include', // Include cookies for authentication
         body: JSON.stringify(dataToSend)
       });
       
       console.log('Código de estado de respuesta:', response.status);
       console.log('Headers de respuesta:', Object.fromEntries(response.headers));
       
-      // Si la respuesta no es exitosa, intentar obtener el texto del error
+      // If the response is not successful, try to get the error text
       if (!response.ok) {
         const errorText = await response.text();
         console.error('Error en respuesta:', response.status, errorText);
         throw new Error(`Error ${response.status}: ${errorText}`);
       }
       
-      // Verificar el tipo de contenido de la respuesta
+      // Check the content type of the response
       const contentType = response.headers.get('content-type');
       console.log('Tipo de contenido de respuesta:', contentType);
       
-      // Si la respuesta está vacía o no es JSON, manejarlo de manera especial
+      // If the response is empty or not JSON, handle it specially
       if (!contentType || !contentType.includes('application/json')) {
         console.warn('La respuesta no es JSON, posiblemente está vacía o mal formateada');
         
-        // Si la respuesta es exitosa pero no hay datos JSON, crear un producto mínimo
+        // If the response is successful but there is no JSON data, create a minimal product
         if (response.status >= 200 && response.status < 300) {
           console.log('Respuesta exitosa pero sin datos JSON. Creando producto mínimo...');
           
-          // Crear un producto mínimo basado en los datos enviados
+          // Create a minimal product based on the sent data
           const minimalProduct: Product = {
-            id: Math.floor(Math.random() * 10000), // ID temporal hasta recargar
+            id: Math.floor(Math.random() * 10000), // Temporary ID until reload
             name: dataToSend.name || 'Nuevo producto',
             category: dataToSend.category || 'general',
             basePrice: dataToSend.base_price || 0,
@@ -388,24 +388,24 @@ export const ProductsApi = {
           return minimalProduct;
         }
         
-        // Si la respuesta no es exitosa y no es JSON, lanzar error
+        // If the response is not successful and it's not JSON, throw an error
         const respText = await response.text();
         throw new Error(`Respuesta no JSON (${response.status}): ${respText}`);
       }
       
-      // Intentar analizar los datos JSON
+      // Try to parse the JSON data
       let data;
       try {
         const responseText = await response.text();
         console.log('Texto de respuesta completo:', responseText);
         
-        // Si el texto está vacío, manejarlo
+        // If the text is empty, handle it
         if (!responseText || responseText.trim() === '') {
           console.warn('La respuesta JSON está vacía');
           throw new Error('Respuesta JSON vacía');
         }
         
-        // Intentar parsear el JSON
+        // Try to parse the JSON
         data = JSON.parse(responseText);
       } catch (parseError) {
         console.error('Error al parsear la respuesta JSON:', parseError);
@@ -414,13 +414,13 @@ export const ProductsApi = {
       
       console.log('Respuesta del backend al crear producto:', data);
       
-      // Si la respuesta es null pero el código es exitoso, crear un producto mínimo
+      // If the response is null but the code is successful, create a minimal product
       if (!data && response.status >= 200 && response.status < 300) {
         console.warn('Respuesta del backend es null pero el código es exitoso. Creando producto mínimo...');
         
-        // Crear un producto mínimo basado en los datos enviados
+        // Create a minimal product based on the sent data
         const minimalProduct: Product = {
-          id: Math.floor(Math.random() * 10000), // ID temporal hasta recargar
+          id: Math.floor(Math.random() * 10000), // Temporary ID until reload
           name: dataToSend.name || 'Nuevo producto',
           category: dataToSend.category || 'general',
           basePrice: dataToSend.base_price || 0,
@@ -432,15 +432,15 @@ export const ProductsApi = {
         return minimalProduct;
       }
       
-      // Verificar que data contiene la información esperada
+      // Verify that data contains the expected information
       if (!data || !data.id) {
         console.error('Respuesta del backend no contiene un ID de producto:', data);
         
-        // Si hay algún tipo de datos en la respuesta, intentar usarlos
+        // If there is some kind of data in the response, try to use it
         if (data) {
           console.log('Intentando recuperar datos parciales de la respuesta...');
           
-          // Crear un producto con los datos disponibles y un ID temporal
+          // Create a product with available data and a temporary ID
           const partialProduct: Product = {
             id: data.id || Math.floor(Math.random() * 10000),
             name: data.name || dataToSend.name || 'Nuevo producto',
@@ -465,41 +465,41 @@ export const ProductsApi = {
   },
 
   /**
-   * Actualiza un producto existente
+   * Updates an existing product
    */
   updateProduct: async (productId: number, productData: Partial<Product>): Promise<Product> => {
     try {
       console.log(`Actualizando producto ${productId}:`, productData);
       
-      // Asegurarse de que el precio base esté en el formato correcto
+      // Make sure the base price is in the correct format
       const dataToSend: any = { ...productData };
       
-      // Si basePrice existe en productData, convertirlo a base_price para el backend
+      // If basePrice exists in productData, convert it to base_price for the backend
       if (dataToSend.basePrice !== undefined) {
         dataToSend.base_price = dataToSend.basePrice;
-        delete dataToSend.basePrice; // Eliminar la propiedad frontend para evitar duplicación
+        delete dataToSend.basePrice; // Remove the frontend property to avoid duplication
       }
       
-      // Si image existe en productData, convertirlo a image_url para el backend
+      // If image exists in productData, convert it to image_url for the backend
       if (dataToSend.image !== undefined) {
         dataToSend.image_url = dataToSend.image;
-        delete dataToSend.image; // Eliminar la propiedad frontend para evitar duplicación
+        delete dataToSend.image; // Remove the frontend property to avoid duplication
       }
       
       console.log('Datos formateados para enviar al backend:', dataToSend);
       
-      // Generar la URL completa con getApiUrl
+      // Generate the full URL with getApiUrl
       const apiUrl = getApiUrl(`products/${productId}`);
       console.log('URL de actualización de producto:', apiUrl);
       
-      // Usar fetch nativo para evitar redirecciones
+      // Use native fetch to avoid redirects
       const response = await fetch(apiUrl, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
-        credentials: 'include', // Incluir cookies para autenticación
+        credentials: 'include', // Include cookies for authentication
         body: JSON.stringify(dataToSend)
       });
       
@@ -512,7 +512,7 @@ export const ProductsApi = {
       const data = await response.json();
       console.log('Respuesta del backend al actualizar producto:', data);
       
-      // Verificar que data contiene la información esperada
+      // Verify that data contains the expected information
       if (!data || !data.id) {
         console.error('Respuesta del backend no contiene un ID de producto:', data);
         throw new Error('Respuesta del backend inválida al actualizar producto');
@@ -526,7 +526,7 @@ export const ProductsApi = {
   },
 
   /**
-   * Elimina un producto
+   * Deletes a product
    */
   deleteProduct: async (productId: number): Promise<void> => {
     try {
@@ -539,7 +539,7 @@ export const ProductsApi = {
   },
 
   /**
-   * Agrega un nuevo tipo de parte a un producto
+   * Adds a new part type to a product
    */
   addPartType: async (productId: number, partTypeData: Partial<PartType>): Promise<PartType> => {
     try {
@@ -553,17 +553,17 @@ export const ProductsApi = {
   },
 
   /**
-   * Agrega una nueva opción a un tipo de parte
+   * Adds a new option to a part type
    */
   addPartOption: async (partTypeId: number, optionData: Partial<PartOption>): Promise<PartOption> => {
     try {
       console.log(`Agregando opción al tipo de parte ${partTypeId}:`, optionData);
       
-      // Asegurarse de que los datos están en el formato correcto
+      // Make sure the data is in the correct format
       const dataToSend = {
         name: optionData.name,
         base_price: optionData.base_price,
-        in_stock: optionData.in_stock !== false // Default a true si no está definido
+        in_stock: optionData.in_stock !== false // Default to true if not defined
       };
       
       console.log('Datos formateados para enviar al backend:', dataToSend);
@@ -577,7 +577,7 @@ export const ProductsApi = {
   },
 
   /**
-   * Elimina un tipo de parte
+   * Deletes a part type
    */
   deletePartType: async (partTypeId: number): Promise<void> => {
     try {
@@ -590,7 +590,7 @@ export const ProductsApi = {
   },
 
   /**
-   * Elimina una opción de un tipo de parte
+   * Deletes an option from a part type
    */
   deletePartOption: async (partTypeId: number, optionId: number): Promise<void> => {
     try {
@@ -603,7 +603,7 @@ export const ProductsApi = {
   },
 
   /**
-   * Obtiene las dependencias de un producto
+   * Gets the dependencies of a product
    */
   getProductDependencies: async (productId: number) => {
     try {
@@ -611,13 +611,13 @@ export const ProductsApi = {
       const response = await apiClient.get(getApiUrl(`admin/products/${productId}/dependencies`));
       console.log('Respuesta de dependencias:', response.data);
       
-      // Verificar que la respuesta sea un array
+      // Verify that the response is an array
       if (!Array.isArray(response.data)) {
         console.error('La respuesta de dependencias no es un array:', response.data);
         return [];
       }
       
-      // Transformar los datos si es necesario
+      // Transform the data if necessary
       const dependencies = response.data.map(dep => ({
         id: dep.id,
         optionId: dep.option_id,
@@ -629,13 +629,13 @@ export const ProductsApi = {
       return dependencies;
     } catch (error) {
       console.error('Error al obtener dependencias:', error);
-      // En caso de error, devolver un array vacío para no romper la UI
+      // In case of error, return an empty array to avoid breaking the UI
       return [];
     }
   },
 
   /**
-   * Crea una nueva dependencia entre opciones
+   * Creates a new dependency between options
    */
   createDependency: async (productId: number, dependency: {
     optionId: number;
@@ -655,7 +655,7 @@ export const ProductsApi = {
   },
 
   /**
-   * Elimina una dependencia
+   * Deletes a dependency
    */
   deleteDependency: async (dependencyId: number) => {
     try {

@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { CartApi, Cart } from '@/api/cartApi';
 import { useRouter } from 'next/navigation';
 
-// Estilos personalizados
+// Custom styles
 const styles = {
   primary: '#ff3366',
   primaryDark: '#e61e50',
@@ -46,7 +46,7 @@ export default function CheckoutPage() {
       setCart(cartData);
       
       if (!cartData || cartData.items.length === 0) {
-        // Si el carrito está vacío, redirigir al carrito
+        // If the cart is empty, redirect to cart
         router.push('/cart');
       }
     } catch (error) {
@@ -71,8 +71,8 @@ export default function CheckoutPage() {
     setLoading(true);
     
     try {
-      // Aquí irá la lógica para procesar el pago
-      // Por ahora, simulamos un procesamiento exitoso
+      // Here will be the payment processing logic
+      // For now, we simulate a successful processing
       setTimeout(() => {
         alert('¡Pago procesado con éxito! Este es un ejemplo de demostración.');
         router.push('/');
@@ -84,7 +84,7 @@ export default function CheckoutPage() {
     }
   };
 
-  // Calcular el total del carrito
+  // Calculate cart total
   const calculateTotal = () => {
     if (!cart || cart.items.length === 0) return 0;
     return cart.items.reduce((total, item) => {
@@ -96,7 +96,7 @@ export default function CheckoutPage() {
     }, 0);
   };
 
-  // Calcular el precio de envío (ejemplo)
+  // Calculate shipping cost (example)
   const shippingCost = 12.99;
 
   if (loading && !cart) {
