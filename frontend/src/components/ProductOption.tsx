@@ -123,7 +123,9 @@ export const ProductOption: React.FC<ProductOptionProps> = ({
               <span className="original-price">{formatPrice(numericBasePrice)}</span>
               <Tooltip content={`Precio especial por combinar con ${condition_option_name}`}>
                 <Badge variant={isDiscount ? "success" : "warning"} className="price-change-badge">
-                  {isDiscount ? `¡Ahorro de €${priceDifference.toFixed(2)}!` : `Precio especial`}
+                  {isDiscount 
+                    ? `¡Ahorro de €${priceDifference.toFixed(2)}!` 
+                    : `+€${priceDifference.toFixed(2)}`}
                 </Badge>
               </Tooltip>
             </>
@@ -145,7 +147,7 @@ export const ProductOption: React.FC<ProductOptionProps> = ({
           <div className="price-condition-info">
             <Tooltip content={isDiscount ? 
               `Ahorro de €${priceDifference.toFixed(2)} al combinar con ${condition_option_name}` : 
-              `Precio especial al combinar con ${condition_option_name}`}>
+              `Incremento de €${priceDifference.toFixed(2)} al combinar con ${condition_option_name}`}>
               <span className="price-condition-badge">
                 Precio especial por combinación con otras opciones
               </span>

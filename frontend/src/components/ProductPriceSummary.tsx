@@ -38,9 +38,13 @@ export const ProductPriceSummary: React.FC<ProductPriceSummaryProps> = ({
   // Formatear el ajuste de precio (con signo + o - según corresponda)
   const formatPriceAdjustment = (adjustment: number) => {
     const absAdjustment = Math.abs(adjustment);
-    return adjustment > 0 
-      ? `-${formatPrice(absAdjustment)}` 
-      : `+${formatPrice(absAdjustment)}`;
+    // Si es un descuento (adjustment positivo), mostramos signo negativo
+    // Si es un incremento (adjustment negativo), mostramos signo positivo
+    if (adjustment > 0) {
+      return `-${formatPrice(absAdjustment)}`; // Es un descuento
+    } else {
+      return `+${formatPrice(absAdjustment)}`; // Es un incremento
+    }
   };
 
   return (
@@ -78,9 +82,17 @@ export const ProductPriceSummary: React.FC<ProductPriceSummaryProps> = ({
           <h4>Precios especiales aplicados</h4>
           {conditionalPrices.map((item, index) => {
             const priceChangeType = item.originalPrice > item.discountedPrice ? 'discount' : 'increase';
+            const priceDifference = Math.abs(item.originalPrice - item.discountedPrice);
+            const priceChangeText = priceChangeType === 'discount' 
+              ? `-${currency}${priceDifference.toFixed(2)}` 
+              : `+${currency}${priceDifference.toFixed(2)}`;
+              
             return (
               <div key={index} className={`conditional-price-item ${priceChangeType}`}>
-                <div className="option-name">{item.optionName}</div>
+                <div className="option-name">
+                  {item.optionName}
+                  <span className="price-change">{priceChangeText}</span>
+                </div>
                 <div className="price-detail">
                   <span className="original-price">{formatPrice(item.originalPrice)}</span>
                   <span className="arrow">→</span>
