@@ -1,166 +1,130 @@
 # Customizable Bicycle E-commerce
 
-E-commerce system for Marcus that allows selling highly customizable bicycles with:
-- Frontend in Next.js
-- Backend in FastAPI
-- PostgreSQL database
-- All dockerized
+## Introduction
 
-## Project Description
+This project is a technical solution for Marcus, a bicycle shop owner who wants to sell highly customizable bicycles online. The system is designed to be extensible, so Marcus can eventually sell other sports-related products (such as skis, surfboards, roller skates, etc.) using the same platform. The main challenge is to allow customers to fully customize their bicycles, enforce compatibility rules, manage inventory, and support dynamic pricing based on selected options and combinations.
 
-This project is a solution for Marcus's bicycle shop, enabling online sales of fully customizable bicycles. The system is designed with scalability to allow future sales of other sports items such as skis, surfboards, skates, etc.
+---
 
-### Key Functionality
-- Customers can fully customize their bicycles by choosing different options for each part
-- Some combinations are prohibited due to real physical limitations
-- Inventory control to mark options as "temporarily out of stock"
-- Dynamic price calculation based on selected options, including special pricing rules for certain combinations
+## How This Solution Meets the Exercise Requirements
 
-## Main Features
-- Bicycle customization with compatibility verification
-- Inventory control
-- Dynamic pricing based on configurations
-- Admin panel
-- Shopping cart
+| Requirement | Solution Overview |
+|-------------|------------------|
+| **1. Data model** | Relational model with entities for Product, Part Category, Option, Compatibility Rule, Price Rule, Inventory, Cart, and Order. See details below. |
+| **2. Main user actions** | Users can browse products, customize bicycles with real-time validation, add to cart, and checkout. |
+| **3. Product page** | UI allows sequential selection of options, shows only compatible/available options, and updates price dynamically. |
+| **4. Add to cart** | When adding to cart, the selected configuration is validated and persisted. |
+| **5. Admin workflows** | Admins can create/edit products, manage options, set compatibility and price rules, and update inventory. |
+| **6. New product creation** | Admin UI/API allows creation of new products and associated part categories. |
+| **7. Adding a new part choice** | Admin can add new options (e.g., rim color) via UI/API; database updates accordingly. |
+| **8. Setting prices** | Admin can set base and conditional prices for options and combinations. |
 
-## Technology Stack
+---
 
-### Backend
-- **FastAPI**: High-performance Python framework for building APIs
-- **SQLAlchemy**: SQL toolkit and ORM for database interactions
-- **PostgreSQL**: Powerful, open-source relational database
-- **Pydantic**: Data validation and settings management
-- **Pytest**: Testing framework for automated tests
+## Project Features
 
-### Frontend
-- **Next.js**: React framework for production-grade applications
-- **React**: JavaScript library for building user interfaces
-- **Tailwind CSS**: Utility-first CSS framework for custom designs
-- **TypeScript**: Strongly typed programming language that builds on JavaScript
+- Full bicycle customization with compatibility and inventory validation
+- Dynamic price calculation, including special pricing rules for option combinations
+- Admin panel for product, option, and rule management
+- Shopping cart and order management
+- Extensible to other sports products
 
-### Infrastructure
-- **Docker**: Containerization for consistent deployment
-- **Docker Compose**: Multi-container Docker application orchestration
+---
 
 ## Data Model
 
-The system uses a relational data model optimized for product customization:
+The system uses a relational data model optimized for customizable products:
 
-### Main Entities
-- **Product**: Available bicycle types (and future products like skis, etc.)
-- **Part Category**: Part groupings (frame, wheels, chain, etc.)
-- **Option**: Specific options for each category (e.g., frame types: Full-suspension, Diamond, Step-through)
-- **Compatibility Rule**: Defines prohibited combinations between options
-- **Price Rule**: Defines special prices for specific combinations
-- **Inventory**: Stock control for each option
-- **Cart**: Stores user selections
-- **Order**: Record of completed purchases
+**Entities:**
+- **Product**: Represents a sellable item (e.g., bicycle, ski, etc.)
+- **Part Category**: Groups of parts (e.g., frame, wheels, chain)
+- **Option**: Specific choices for each part (e.g., frame type: full-suspension, diamond)
+- **Compatibility Rule**: Defines prohibited or required combinations between options
+- **Price Rule**: Defines special prices for specific option combinations
+- **Inventory**: Tracks stock for each option
+- **Cart**: Stores user selections before purchase
+- **Order**: Records completed purchases
 
-### Key Relationships
-- Product -> Part Category (1:N)
-- Part Category -> Option (1:N)
-- Option <-> Compatibility Rule (N:M)
-- Option <-> Price Rule (N:M)
+**Relationships:**
+- Product 1:N Part Category
+- Part Category 1:N Option
+- Option N:M Compatibility Rule
+- Option N:M Price Rule
 
-## Architecture
+**Example Table Structure:**
+- `products (id, name, description, base_price, ...)`
+- `part_categories (id, product_id, name, ...)`
+- `options (id, part_category_id, name, base_price, in_stock, ...)`
+- `compatibility_rules (id, option_id, incompatible_option_id, type)`
+- `price_rules (id, option_id, condition_option_id, conditional_price)`
+- `inventory (option_id, in_stock)`
+- `cart (id, user_id, created_at, ...)`
+- `cart_items (id, cart_id, product_id, selected_options, quantity)`
+- `orders (id, user_id, cart_snapshot, total_price, created_at, ...)`
 
-### Backend (FastAPI)
-- REST API routes for products, parts, options, and cart
-- Parts compatibility validation
-- Dynamic price calculation based on configurations
-- Data management through SQLAlchemy
-- Versioned API design (v1)
-- CORS configuration for secure cross-origin requests
-
-### Frontend (Next.js)
-- Interfaces for exploring products
-- Bicycle configurator with real-time validation
-- Shopping cart
-- Responsive design with Tailwind CSS
-- Client-side state management
-
-### Database (PostgreSQL)
-- Relational storage for products, parts, and dependencies
-- Cart and order records
-- Transactional operations for data integrity
+---
 
 ## Main User Actions
 
-### 1. Explore Products
-- Browse bicycle catalog
-- Filter by type and characteristics
+1. **Explore Products**: Users browse the catalog, filter by type, and view product details.
+2. **Customize Bicycle**: Users select options for each part. The UI only shows compatible and in-stock options. Price updates in real time.
+3. **Add to Cart**: The selected configuration is validated for compatibility and stock before being added to the cart.
+4. **Cart Management**: Users can review, modify, or remove items from the cart, and proceed to checkout.
 
-### 2. Bicycle Customization
-- Sequential selection of options for each part
-- Real-time compatibility validation
-- Dynamic price updates based on selections
-- Display of available/unavailable options
+---
 
-### 3. Cart Management
-- Add configuration to cart
-- Review and modify items
-- Checkout process
+## Product Page & Price Calculation
+
+- The product page presents a step-by-step configurator.
+- Available options are filtered based on current selections and compatibility rules (e.g., "mountain wheels" only allow "full-suspension" frames).
+- Out-of-stock options are disabled.
+- Price is calculated by summing the base prices of selected options, plus any conditional price rules (e.g., "matte finish" + "full-suspension frame" = €50).
+
+---
+
+## Add to Cart Action
+
+- When the user clicks "Add to Cart":
+  - The backend validates the selected options for compatibility and stock.
+  - If valid, the configuration is saved in the cart (including product, selected options, and quantity).
+  - The cart is persisted in the database and associated with the user (or session).
+
+---
 
 ## Administrative Workflows
 
-### 1. Product Management
-- Creation of new product types (bicycles, skis, etc.)
-- Definition of associated part categories
+- **Product Management**: Create/edit products and their part categories.
+- **Option Management**: Add/edit options for each part category, set stock status.
+- **Compatibility Rules**: Define which options are incompatible or required together.
+- **Price Rules**: Set special prices for specific option combinations.
+- **Inventory**: Mark options as in or out of stock.
+- **Sales Analysis**: Review orders and popular configurations.
 
-### 2. Options Management
-- Add new options for each category (e.g., new rim colors)
-- Configure stock availability
+---
 
-### 3. Rules Configuration
-- Define compatibility rules between options
-- Set special pricing rules for specific combinations
+## Creating New Products and Options
 
-### 4. Sales Analysis
-- Order review
-- Popular configuration statistics
+- **New Product**: Admin provides product name, description, base price, and defines part categories.
+- **New Option**: Admin adds a new option (e.g., rim color) to a part category via the admin UI/API. The database updates the `options` table.
 
-## Example Cases Included
+---
 
-### Compatibility Rules
-- If "Fat Bike Wheels" is chosen → "Red Rim" is not available
-- If "Mountain Wheels" is chosen → Only "Full-suspension" frame is available
+## Setting Prices and Price Rules
 
-### Special Price Rules
-- If "Matte" + "Diamond Frame" is chosen → 35€
-- If "Matte" + "Full-suspension Frame" is chosen → 50€
+- Admin can set the base price for each option.
+- Admin can define conditional price rules (e.g., "matte finish" + "full-suspension frame" = €50) via the admin UI/API, which updates the `price_rules` table.
 
-### Inventory Control
-- If an option is out of stock → it cannot be selected
+---
 
-## Prerequisites
-- Docker and Docker Compose
-- Node.js 18+ (for local development)
-- Python 3.11+ (for local development)
+## Technical Decisions & Trade-offs
 
-## Installation
+- **Relational Database (PostgreSQL)**: Chosen for its ability to model complex relationships and enforce data integrity, especially for compatibility and pricing rules.
+- **Backend/Frontend Separation**: Enables independent scaling and parallel development.
+- **Dockerization**: Ensures consistent environments for development and production.
+- **Extensibility**: The model supports adding new product types and options without major changes.
+- **Validation Logic**: Compatibility and pricing logic is centralized in the backend for consistency and security.
 
-1. Clone the repository:
-```bash
-git clone [repository-url]
-cd factorial-technical-test
-```
-
-2. Start with Docker:
-```bash
-docker compose up -d
-```
-
-3. Access the application:
-   - Frontend: http://localhost:3000
-   - API Backend: http://localhost:8000
-   - API Documentation: http://localhost:8000/docs
-
-## Running Tests
-
-### Backend Tests
-```bash
-docker compose exec backend pytest
-```
+---
 
 ## Project Structure
 
@@ -168,7 +132,7 @@ docker compose exec backend pytest
 /
 ├── backend/               # FastAPI API
 │   ├── app/
-│   │   ├── api/           # API routes
+│   │   ├── api/           # API routes (products, cart, admin)
 │   │   ├── models/        # Data models
 │   │   ├── schemas/       # Pydantic schemas
 │   │   ├── services/      # Business logic
@@ -188,32 +152,77 @@ docker compose exec backend pytest
 │   │   └── types/         # TypeScript types
 │   └── Dockerfile
 ├── docker-compose.yml     # Docker configuration
-└── scripts/               # Useful scripts
+├── scripts/               # Useful scripts (e.g., setup.sh)
+└── README.md
 ```
 
-## Technical Decisions
+---
 
-### PostgreSQL Choice
-- The relational nature of the data model requires a robust relational system
-- Compatibility rules and special prices are efficiently implemented through SQL queries
+## How to Run the Project
 
-### Backend/Frontend Separation
-- Allows independent scalability
-- Facilitates parallel development of frontend and backend
+### Prerequisites
+- Docker and Docker Compose
+- Node.js 18+ (for local development)
+- Python 3.11+ (for local development)
 
-### Dockerization
-- Ensures consistency between development and production environments
-- Simplifies deployment
+### Quick Start (Recommended)
+
+Use the provided setup script to build and start all services:
+
+```bash
+./scripts/setup.sh
+```
+
+This will:
+- Check Docker and Docker Compose installation
+- Create required Docker volumes
+- Build and start all containers (database, backend, frontend)
+- Print URLs for accessing the frontend and backend
+
+### Manual Start
+
+1. Clone the repository:
+```bash
+cd factorial-technical-test
+```
+2. Start with Docker Compose:
+```bash
+docker compose up -d
+```
+3. Access the application:
+   - Frontend: http://localhost:3000
+   - API Backend: http://localhost:8000
+   - API Docs: http://localhost:8000/docs
+
+### Running Backend Tests
+
+```bash
+docker compose exec backend pytest
+```
+
+---
+
+## Example API Endpoints
+
+- **Get all products:** `GET /api/v1/products/`
+- **Get product details:** `GET /api/v1/products/{product_id}`
+- **Get available options for a product:** `GET /api/v1/products/{product_id}/options`
+- **Validate compatibility:** `POST /api/v1/products/validate-compatibility`
+- **Calculate price:** `POST /api/v1/products/calculate-price`
+- **Cart management:** `GET /api/v1/cart`, `POST /api/v1/cart/items`
+- **Admin (create product):** `POST /api/v1/admin/products`
+- **Admin (add option):** `POST /api/v1/admin/part-types/{part_type_id}/options`
+- **Admin (set price rule):** `POST /api/v1/admin/options/{option_id}/conditional-prices`
+
+---
 
 ## Future Improvements
 
-### Authentication & Authorization
-- Implement user authentication system with JWT
-- Role-based access control for admin pages
-- Secure the admin API routes with proper middleware
+- User authentication and role-based access control
+- Customer accounts and order history
+- Enhanced admin analytics
+- Support for more product types
+- Improved error handling and UI feedback
 
-### User Management
-- Customer accounts and profiles
-- Order history and tracking
-- Saved bicycle configurations
+---
 
