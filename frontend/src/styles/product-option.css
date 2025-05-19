@@ -67,12 +67,25 @@
   font-weight: 600;
 }
 
-.discount-badge {
-  background-color: #10b981;
-  color: white;
+.conditional-price {
+  color: #fe3e6d;
+  font-weight: 600;
+}
+
+.price-change-badge {
   font-size: 12px;
   padding: 2px 6px;
   border-radius: 4px;
+}
+
+.price-change-badge[variant="success"] {
+  background-color: #10b981;
+  color: white;
+}
+
+.price-change-badge[variant="warning"] {
+  background-color: #f59e0b;
+  color: white;
 }
 
 .conditional-badge {
@@ -93,8 +106,26 @@
   align-items: center;
 }
 
-.discount-info::before {
-  content: "✓";
+.price-condition-info {
+  font-size: 13px;
+  margin-top: 4px;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+}
+
+.price-condition-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 13px;
+  color: #059669;
+  background-color: #ecfdf5;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.price-condition-badge::before {
+  content: "○";
   display: inline-block;
   margin-right: 4px;
   font-weight: bold;

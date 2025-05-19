@@ -1,17 +1,16 @@
 .price-summary-container {
-  background-color: #ffffff;
+  background-color: #f8fafc;
   border-radius: 8px;
-  padding: 20px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  padding: 16px;
   margin-bottom: 24px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .price-summary-container h3 {
-  font-size: 18px;
-  font-weight: 600;
   margin-top: 0;
   margin-bottom: 16px;
-  color: #1f2937;
+  font-size: 18px;
+  color: #333;
 }
 
 .price-summary-line {
@@ -21,18 +20,22 @@
 }
 
 .price-label {
-  font-size: 15px;
-  color: #4b5563;
+  font-size: 14px;
+  color: #64748b;
 }
 
 .price-value {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 500;
-  color: #1f2937;
+  color: #334155;
 }
 
 .price-summary-line.discount {
   color: #10b981;
+}
+
+.price-summary-line.surcharge {
+  color: #f59e0b;
 }
 
 .price-value.savings {
@@ -40,50 +43,62 @@
   font-weight: 600;
 }
 
+.price-value.surcharge {
+  color: #f59e0b;
+  font-weight: 600;
+}
+
 .price-summary-divider {
   height: 1px;
-  background-color: #e5e7eb;
+  background-color: #e2e8f0;
   margin: 16px 0;
 }
 
 .price-summary-total {
   display: flex;
   justify-content: space-between;
-  margin-top: 16px;
-  margin-bottom: 8px;
+  margin-top: 8px;
 }
 
 .price-summary-total .price-label {
   font-size: 16px;
   font-weight: 600;
-  color: #1f2937;
+  color: #334155;
 }
 
-.price-value.total {
+.price-summary-total .price-value.total {
   font-size: 18px;
   font-weight: 700;
   color: #fe3e6d;
 }
 
+/* Estilos para detalles de precios condicionales */
 .conditional-prices-detail {
   margin-top: 20px;
-  border-top: 1px dashed #e5e7eb;
+  border-top: 1px dashed #e2e8f0;
   padding-top: 16px;
 }
 
 .conditional-prices-detail h4 {
   font-size: 15px;
-  font-weight: 600;
   margin-top: 0;
   margin-bottom: 12px;
-  color: #1f2937;
+  color: #475569;
 }
 
 .conditional-price-item {
-  background-color: #f9fafb;
+  background-color: #f1f5f9;
   border-radius: 6px;
   padding: 12px;
   margin-bottom: 10px;
+}
+
+.conditional-price-item.discount {
+  border-left: 3px solid #10b981;
+}
+
+.conditional-price-item.increase {
+  border-left: 3px solid #f59e0b;
 }
 
 .conditional-price-item .option-name {
@@ -96,26 +111,34 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 
 .price-detail .original-price {
   text-decoration: line-through;
-  color: #6b7280;
+  color: #64748b;
   font-size: 14px;
 }
 
 .price-detail .arrow {
-  color: #9ca3af;
+  color: #94a3b8;
 }
 
-.price-detail .discounted-price {
-  color: #10b981;
+.price-detail .conditional-price {
   font-weight: 600;
+  font-size: 14px;
+}
+
+.conditional-price-item.discount .conditional-price {
+  color: #10b981;
+}
+
+.conditional-price-item.increase .conditional-price {
+  color: #f59e0b;
 }
 
 .condition-detail {
   font-size: 13px;
-  color: #6b7280;
+  color: #64748b;
   font-style: italic;
 } 

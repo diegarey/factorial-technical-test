@@ -22,14 +22,26 @@ export const ProductPriceSummary: React.FC<ProductPriceSummaryProps> = ({
   conditionalPrices,
   currency = '€'
 }) => {
-  // Calcular el ahorro total por precios condicionales
-  const totalSavings = conditionalPrices.reduce(
+  // Calcular los ajustes totales por precios condicionales (pueden ser positivos o negativos)
+  const totalPriceAdjustment = conditionalPrices.reduce(
     (sum, item) => sum + (item.originalPrice - item.discountedPrice),
     0
   );
 
+  // Determinar si el ajuste total es un descuento o un incremento
+  const isDiscount = totalPriceAdjustment > 0;
+  const isIncrease = totalPriceAdjustment < 0;
+
   // Formatear precio con símbolo de moneda
   const formatPrice = (price: number) => `${currency}${price.toFixed(2)}`;
+  
+  // Formatear el ajuste de precio (con signo + o - según corresponda)
+  const formatPriceAdjustment = (adjustment: number) => {
+    const absAdjustment = Math.abs(adjustment);
+    return adjustment > 0 
+      ? `-${formatPrice(absAdjustment)}` 
+      : `+${formatPrice(absAdjustment)}`;
+  };
 
   return (
     <div className="price-summary-container">
@@ -45,10 +57,12 @@ export const ProductPriceSummary: React.FC<ProductPriceSummaryProps> = ({
         <span className="price-value">{formatPrice(optionsPrice)}</span>
       </div>
       
-      {totalSavings > 0 && (
-        <div className="price-summary-line discount">
-          <span className="price-label">Ahorro por combinaciones</span>
-          <span className="price-value savings">-{formatPrice(totalSavings)}</span>
+      {totalPriceAdjustment !== 0 && (
+        <div className={`price-summary-line ${isDiscount ? 'discount' : 'surcharge'}`}>
+          <span className="price-label">Ajustes por combinaciones</span>
+          <span className={`price-value ${isDiscount ? 'savings' : 'surcharge'}`}>
+            {formatPriceAdjustment(totalPriceAdjustment)}
+          </span>
         </div>
       )}
       
@@ -62,19 +76,22 @@ export const ProductPriceSummary: React.FC<ProductPriceSummaryProps> = ({
       {conditionalPrices.length > 0 && (
         <div className="conditional-prices-detail">
           <h4>Precios especiales aplicados</h4>
-          {conditionalPrices.map((item, index) => (
-            <div key={index} className="conditional-price-item">
-              <div className="option-name">{item.optionName}</div>
-              <div className="price-detail">
-                <span className="original-price">{formatPrice(item.originalPrice)}</span>
-                <span className="arrow">→</span>
-                <span className="discounted-price">{formatPrice(item.discountedPrice)}</span>
+          {conditionalPrices.map((item, index) => {
+            const priceChangeType = item.originalPrice > item.discountedPrice ? 'discount' : 'increase';
+            return (
+              <div key={index} className={`conditional-price-item ${priceChangeType}`}>
+                <div className="option-name">{item.optionName}</div>
+                <div className="price-detail">
+                  <span className="original-price">{formatPrice(item.originalPrice)}</span>
+                  <span className="arrow">→</span>
+                  <span className="conditional-price">{formatPrice(item.discountedPrice)}</span>
+                </div>
+                <div className="condition-detail">
+                  Precio especial al combinar con: {item.conditionedBy}
+                </div>
               </div>
-              <div className="condition-detail">
-                Al combinar con: {item.conditionedBy}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

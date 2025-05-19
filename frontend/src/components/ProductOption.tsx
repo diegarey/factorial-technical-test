@@ -59,16 +59,25 @@ export const ProductOption: React.FC<ProductOptionProps> = ({
   // Determinar el precio a mostrar
   const displayPrice = numericApplicablePrice !== undefined ? numericApplicablePrice : numericBasePrice;
   
-  // Determinar si hay un descuento
-  const hasDiscount = numericApplicablePrice !== undefined && 
-    numericApplicablePrice < numericBasePrice && 
+  // Determinar si hay un precio condicional aplicado
+  const hasPriceCondition = numericApplicablePrice !== undefined && 
+    numericApplicablePrice !== numericBasePrice && 
     price_condition_met === true;
+    
+  // Determinar si es un descuento o un incremento
+  const isDiscount = hasPriceCondition && numericApplicablePrice! < numericBasePrice;
+  const isPriceIncrease = hasPriceCondition && numericApplicablePrice! > numericBasePrice;
   
-  // Calcular el porcentaje de descuento si existe
-  const discountPercentage = hasDiscount 
-    ? Math.round(((numericBasePrice - numericApplicablePrice!) / numericBasePrice) * 100) 
+  // Calcular el porcentaje de cambio
+  const priceChangePercentage = hasPriceCondition 
+    ? Math.abs(Math.round(((numericBasePrice - numericApplicablePrice!) / numericBasePrice) * 100))
     : 0;
   
+  // Calcular la diferencia de precio
+  const priceDifference = hasPriceCondition
+    ? Math.abs(numericBasePrice - numericApplicablePrice!)
+    : 0;
+    
   // Generar mensaje de tooltip para precios condicionales disponibles
   const conditionalPriceTooltip = conditional_prices && conditional_prices.length > 0 
     ? `Combina con: ${conditional_prices.map(cp => {
@@ -82,7 +91,9 @@ export const ProductOption: React.FC<ProductOptionProps> = ({
   console.log(`Opción ${name}:`, {
     basePrice: numericBasePrice,
     applicablePrice: numericApplicablePrice,
-    hasDiscount,
+    hasPriceCondition,
+    isDiscount,
+    isPriceIncrease,
     priceConditionMet: price_condition_met,
     conditionName: condition_option_name,
     conditionalPricesCount: conditional_prices?.length || 0
@@ -107,32 +118,38 @@ export const ProductOption: React.FC<ProductOptionProps> = ({
         <div className="option-name">{name}</div>
         
         <div className="option-price">
-          {hasDiscount && (
+          {hasPriceCondition && (
             <>
               <span className="original-price">{formatPrice(numericBasePrice)}</span>
               <Tooltip content={`Precio especial por combinar con ${condition_option_name}`}>
-                <Badge variant="success" className="discount-badge">
-                  {`-${discountPercentage}%`}
+                <Badge variant={isDiscount ? "success" : "warning"} className="price-change-badge">
+                  {isDiscount ? `¡Ahorro de €${priceDifference.toFixed(2)}!` : `Precio especial`}
                 </Badge>
               </Tooltip>
             </>
           )}
-          <span className={hasDiscount ? 'discounted-price' : ''}>
+          <span className={hasPriceCondition ? 'conditional-price' : ''}>
             {formatPrice(displayPrice)}
           </span>
           
           {conditional_prices && conditional_prices.length > 0 && !price_condition_met && (
             <Tooltip content={conditionalPriceTooltip}>
               <Badge variant="info" className="conditional-badge">
-                Combos disponibles
+                Precio con combos
               </Badge>
             </Tooltip>
           )}
         </div>
         
-        {selected && hasDiscount && (
-          <div className="discount-info">
-            Descuento aplicado por combinar con {condition_option_name}
+        {selected && hasPriceCondition && (
+          <div className="price-condition-info">
+            <Tooltip content={isDiscount ? 
+              `Ahorro de €${priceDifference.toFixed(2)} al combinar con ${condition_option_name}` : 
+              `Precio especial al combinar con ${condition_option_name}`}>
+              <span className="price-condition-badge">
+                Precio especial por combinación con otras opciones
+              </span>
+            </Tooltip>
           </div>
         )}
         
