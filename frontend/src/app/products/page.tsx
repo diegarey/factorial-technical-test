@@ -47,7 +47,7 @@ export default function ProductsPage() {
         setError(null);
       } catch (err) {
         console.error('Error loading products:', err);
-        setError('Could not load products. Please try again later.');
+        setError('No se pudieron cargar los productos. Por favor, inténtalo de nuevo más tarde.');
       } finally {
         setLoading(false);
       }
@@ -98,7 +98,7 @@ export default function ProductsPage() {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="spinner"></div>
-        <span className="ml-2">Loading products...</span>
+        <span className="ml-2">Cargando productos...</span>
       </div>
     );
   }
@@ -115,14 +115,14 @@ export default function ProductsPage() {
   return (
     <div>
       <header className="mb-8">
-        <h1 className="text-3xl font-bold text-secondary mb-2">Our products</h1>
+        <h1 className="text-3xl font-bold text-secondary mb-2">Nuestros productos</h1>
         <p className="text-secondary-light">
-          Select a model to start your customization
+          Selecciona un modelo para comenzar tu personalización
         </p>
       </header>
 
       {products.length === 0 ? (
-        <p className="text-center text-secondary-light">No products available at this time.</p>
+        <p className="text-center text-secondary-light">No hay productos disponibles en este momento.</p>
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -140,13 +140,13 @@ export default function ProductsPage() {
                 </div>
                 <div className="p-6">
                   <h2 className="text-xl font-semibold mb-2 text-secondary">{product.name}</h2>
-                  <p className="text-secondary-light mb-4">{product.description || 'Customizable bicycle with multiple options'}</p>
+                  <p className="text-secondary-light mb-4">{product.description || 'Bicicleta personalizable con múltiples opciones'}</p>
                   <div className="flex justify-between items-center">
                     <span className="text-xl font-bold text-primary">
-                      From €{(product.basePrice || 0).toFixed(2)}
+                      Desde €{(product.basePrice || 0).toFixed(2)}
                     </span>
                     <Link href={`/products/${product.id}/customize`} className="btn btn-primary">
-                      Customize
+                      Personalizar
                     </Link>
                   </div>
                 </div>
@@ -162,7 +162,7 @@ export default function ProductsPage() {
                   onClick={() => handlePageChange(currentPage - 1)}
                   disabled={currentPage === 1}
                   className={`px-3 py-1 rounded ${currentPage === 1 ? 'text-gray-400 cursor-not-allowed' : 'text-secondary hover:bg-gray-100'}`}
-                  aria-label="Previous page"
+                  aria-label="Página anterior"
                 >
                   &laquo;
                 </button>
@@ -191,7 +191,7 @@ export default function ProductsPage() {
                   onClick={() => handlePageChange(currentPage + 1)}
                   disabled={currentPage === totalPages}
                   className={`px-3 py-1 rounded ${currentPage === totalPages ? 'text-gray-400 cursor-not-allowed' : 'text-secondary hover:bg-gray-100'}`}
-                  aria-label="Next page"
+                  aria-label="Página siguiente"
                 >
                   &raquo;
                 </button>

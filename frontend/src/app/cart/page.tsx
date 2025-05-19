@@ -9,7 +9,7 @@ import { ProductsApi } from '@/api/productsApi';
 import { Product, PartOption, PartType } from '@/types/product';
 import { convertToValidPrice, formatPrice } from '../../utils/dataUtils';
 
-// Estilos personalizados
+// Custom styles
 const styles = {
   primary: '#ff3366',
   primaryDark: '#e61e50',
@@ -71,7 +71,7 @@ export default function CartPage() {
       console.log('Cookies after loading cart:', document.cookie);
     } catch (error) {
       console.error('Error loading cart:', error);
-      setError('Unable to load cart. Please try again later.');
+      setError('No se pudo cargar el carrito. Por favor, inténtalo de nuevo más tarde.');
     } finally {
       setLoading(false);
     }
@@ -126,7 +126,7 @@ export default function CartPage() {
       await fetchCart(); // Reload cart
     } catch (error) {
       console.error('Error updating quantity:', error);
-      setError('Unable to update quantity. Please try again later.');
+      setError('No se pudo actualizar la cantidad. Por favor, inténtalo de nuevo más tarde.');
     } finally {
       setLoading(false);
     }
@@ -139,7 +139,7 @@ export default function CartPage() {
       await fetchCart(); // Reload cart
     } catch (error) {
       console.error('Error removing product:', error);
-      setError('Unable to remove product. Please try again later.');
+      setError('No se pudo eliminar el producto. Por favor, inténtalo de nuevo más tarde.');
     } finally {
       setLoading(false);
     }
@@ -166,7 +166,7 @@ export default function CartPage() {
     }
     
     // If we don't have data, use a generic name dependent on the ID
-    return `Product ${productId}`;
+    return `Producto ${productId}`;
   };
 
   // Group options by part type
@@ -217,7 +217,7 @@ export default function CartPage() {
           onClick={fetchCart}
           className="btn btn-primary"
         >
-          Try again
+          Intentar de nuevo
         </button>
       </div>
     );
@@ -226,13 +226,13 @@ export default function CartPage() {
   if (!cart || cart.items.length === 0) {
     return (
       <div className="text-center py-12">
-        <h1 className="text-3xl font-bold mb-4">Your cart is empty</h1>
+        <h1 className="text-3xl font-bold mb-4">Tu carrito está vacío</h1>
         <p className="text-gray-600 mb-8">
-          Add some products to your cart to continue shopping.
+          Añade algunos productos a tu carrito para continuar comprando.
         </p>
         
         <Link href="/products" className="btn btn-primary">
-          Go to Store
+          Ir a la Tienda
         </Link>
       </div>
     );
@@ -240,13 +240,13 @@ export default function CartPage() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-8" style={{ color: styles.secondary, borderBottom: `1px solid ${styles.lightGray}`, paddingBottom: '1rem' }}>Your cart</h1>
+      <h1 className="text-3xl font-bold mb-8" style={{ color: styles.secondary, borderBottom: `1px solid ${styles.lightGray}`, paddingBottom: '1rem' }}>Tu carrito</h1>
       
       {loading && (
         <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50 backdrop-blur-sm">
           <div className="bg-white p-6 rounded-xl shadow-xl flex items-center space-x-4" style={{ boxShadow: styles.boxShadow }}>
             <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2" style={{ borderColor: styles.primary }}></div>
-            <p className="text-gray-700 font-medium">Updating cart...</p>
+            <p className="text-gray-700 font-medium">Actualizando carrito...</p>
           </div>
         </div>
       )}
@@ -321,7 +321,7 @@ export default function CartPage() {
                   {/* Second row: price and options details */}
                   <div className="p-4 rounded-lg shadow-inner" style={{ backgroundColor: styles.lightGray }}>
                     <div className="flex justify-between text-sm font-medium mb-3 pb-2" style={{ borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
-                      <span className="text-gray-600">Base price:</span>
+                      <span className="text-gray-600">Precio base:</span>
                       <span className="text-gray-800 font-semibold">€{formatPrice(basePrice)}</span>
                     </div>
                     
@@ -344,13 +344,13 @@ export default function CartPage() {
                         
                         {optionsPrice > 0 && (
                           <div className="flex justify-between text-sm font-semibold mt-2 pt-2" style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
-                            <span className="text-gray-700">Extra by options:</span>
+                            <span className="text-gray-700">Extra por opciones:</span>
                             <span style={{ color: styles.primary }}>€{formatPrice(optionsPrice)}</span>
                           </div>
                         )}
                       </div>
                     ) : (
-                      <p className="text-gray-500 text-sm italic py-1">No additional personalizations</p>
+                      <p className="text-gray-500 text-sm italic py-1">Sin personalizaciones adicionales</p>
                     )}
                   </div>
                   
@@ -364,10 +364,10 @@ export default function CartPage() {
                         color: '#ff3b30', 
                         transition: styles.buttonTransition 
                       }}
-                      aria-label="Remove product"
+                      aria-label="Eliminar producto"
                     >
                       <TrashIcon className="h-5 w-5 mr-1" />
-                      <span className="text-sm font-medium">Remove</span>
+                      <span className="text-sm font-medium">Eliminar</span>
                     </button>
                   </div>
                 </div>
@@ -384,7 +384,7 @@ export default function CartPage() {
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
-              Continue shopping
+              Continuar comprando
             </Link>
           </div>
         </div>
@@ -394,7 +394,7 @@ export default function CartPage() {
             style={{ boxShadow: styles.boxShadow }}>
             <h2 className="text-xl font-bold mb-6 pb-3" 
               style={{ color: styles.secondary, borderBottom: '1px solid #eee' }}>
-              Order summary
+              Resumen del pedido
             </h2>
             
             <div className="space-y-4 mb-6">
@@ -404,13 +404,13 @@ export default function CartPage() {
               </div>
               
               <div className="flex justify-between">
-                <span className="text-gray-600">Shipping</span>
-                <span className="text-gray-500 italic">Calculated in the next step</span>
+                <span className="text-gray-600">Envío</span>
+                <span className="text-gray-500 italic">Se calculará en el siguiente paso</span>
               </div>
               
               <div className="flex justify-between pt-3 text-sm text-gray-500">
-                <span>Taxes</span>
-                <span>Included</span>
+                <span>Impuestos</span>
+                <span>Incluidos</span>
               </div>
             </div>
             
@@ -419,7 +419,7 @@ export default function CartPage() {
                 <span style={{ color: styles.secondary }}>Total</span>
                 <span style={{ color: styles.primary }}>€{formatPrice(calculateTotal())}</span>
               </div>
-              <p className="text-xs text-gray-500 mt-1 text-right">Taxes included</p>
+              <p className="text-xs text-gray-500 mt-1 text-right">Impuestos incluidos</p>
             </div>
             
             <button
@@ -433,7 +433,7 @@ export default function CartPage() {
               onMouseOver={(e) => e.currentTarget.style.backgroundColor = styles.primaryDark}
               onMouseOut={(e) => e.currentTarget.style.backgroundColor = styles.primary}
             >
-              <span>Proceed to checkout</span>
+              <span>Proceder al pago</span>
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
               </svg>
@@ -444,7 +444,7 @@ export default function CartPage() {
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                 </svg>
-                <p className="text-xs text-gray-500">100% secure payment. Your data is protected.</p>
+                <p className="text-xs text-gray-500">Pago 100% seguro. Tus datos están protegidos.</p>
               </div>
             </div>
           </div>
