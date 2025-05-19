@@ -438,14 +438,6 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
             </div>
           </div>
           
-          <div className="mt-8 text-xs text-gray-400 border-t border-gray-100 pt-4">
-            <details>
-              <summary className="cursor-pointer hover:text-gray-500">Información técnica (solo para desarrolladores)</summary>
-              <p className="mt-2">
-                ID: {product.id}, Categoría: {product.category}
-              </p>
-            </details>
-          </div>
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
