@@ -1,12 +1,39 @@
-# Customizable Bicycle E-commerce
+# Customizable Bicycle E-commerce 🚲
 
-## Introduction
+![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi)
+![Next.js](https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=next.js)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql)
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css)
+
+## 📋 Table of Contents
+- [Introduction](#introduction)
+- [How This Solution Meets the Exercise Requirements](#how-this-solution-meets-the-exercise-requirements)
+- [Project Features](#project-features)
+- [Data Model](#data-model)
+- [Main User Actions](#main-user-actions)
+- [Product Page & Price Calculation](#product-page--price-calculation)
+- [Add to Cart Action](#add-to-cart-action)
+- [Administrative Workflows](#administrative-workflows)
+- [Creating New Products and Options](#creating-new-products-and-options)
+- [Setting Prices and Price Rules](#setting-prices-and-price-rules)
+- [Technical Decisions & Trade-offs](#technical-decisions--trade-offs)
+- [Project Structure](#project-structure)
+- [How to Run the Project](#how-to-run-the-project)
+- [Example API Endpoints](#example-api-endpoints)
+- [API Request & Response Examples](#api-request--response-examples)
+- [Future Improvements](#future-improvements)
+- [Troubleshooting](#troubleshooting)
+- [Development Notes](#development-notes)
+- [Contact](#contact)
+
+## 🚀 Introduction
 
 This project is a technical solution for Marcus, a bicycle shop owner who wants to sell highly customizable bicycles online. The system is designed to be extensible, so Marcus can eventually sell other sports-related products (such as skis, surfboards, roller skates, etc.) using the same platform. The main challenge is to allow customers to fully customize their bicycles, enforce compatibility rules, manage inventory, and support dynamic pricing based on selected options and combinations.
 
 ---
 
-## How This Solution Meets the Exercise Requirements
+## 📊 How This Solution Meets the Exercise Requirements
 
 | Requirement | Solution Overview |
 |-------------|------------------|
@@ -21,17 +48,17 @@ This project is a technical solution for Marcus, a bicycle shop owner who wants 
 
 ---
 
-## Project Features
+## ✨ Project Features
 
-- Full bicycle customization with compatibility and inventory validation
-- Dynamic price calculation, including special pricing rules for option combinations
-- Admin panel for product, option, and rule management
-- Shopping cart and order management
-- Extensible to other sports products
+- 🔧 Full bicycle customization with compatibility and inventory validation
+- 💰 Dynamic price calculation, including special pricing rules for option combinations
+- 👨‍💼 Admin panel for product, option, and rule management
+- 🛒 Shopping cart and order management
+- 🔄 Extensible to other sports products
 
 ---
 
-## Data Model
+## 🗃️ Data Model
 
 The system uses a relational data model optimized for customizable products:
 
@@ -51,47 +78,88 @@ The system uses a relational data model optimized for customizable products:
 - Option N:M Compatibility Rule
 - Option N:M Price Rule
 
+**Entity Relationship Diagram (simplified):**
+
+```
+Product
+  ↓ 1:N
+Part Category
+  ↓ 1:N
+Option ←→ Option (via Compatibility Rule) N:M
+  ↓
+  ↓ N:M
+Option ←→ Option (via Price Rule) N:M
+```
+
 **Example Table Structure:**
-- `products (id, name, description, base_price, ...)`
-- `part_categories (id, product_id, name, ...)`
-- `options (id, part_category_id, name, base_price, in_stock, ...)`
-- `compatibility_rules (id, option_id, incompatible_option_id, type)`
+- `products (id, name, description, base_price, image, featured)`
+- `part_categories (id, product_id, name, display_order)`
+- `options (id, part_category_id, name, base_price, in_stock, image)`
+- `compatibility_rules (id, option_id, depends_on_option_id, type)` where `type` can be 'requires' or 'excludes'
 - `price_rules (id, option_id, condition_option_id, conditional_price)`
-- `inventory (option_id, in_stock)`
-- `cart (id, user_id, created_at, ...)`
-- `cart_items (id, cart_id, product_id, selected_options, quantity)`
-- `orders (id, user_id, cart_snapshot, total_price, created_at, ...)`
+- `cart (id, user_id, created_at, updated_at)`
+- `cart_items (id, cart_id, product_id, selected_options, quantity, price)`
 
 ---
 
-## Main User Actions
+## 👥 Main User Actions
 
 1. **Explore Products**: Users browse the catalog, filter by type, and view product details.
 2. **Customize Bicycle**: Users select options for each part. The UI only shows compatible and in-stock options. Price updates in real time.
 3. **Add to Cart**: The selected configuration is validated for compatibility and stock before being added to the cart.
 4. **Cart Management**: Users can review, modify, or remove items from the cart, and proceed to checkout.
 
+**Customer Flow Diagram:**
+```
+   Browse           Select Parts           Validate             Checkout
+   Catalog          & Options              & Add to Cart        Process
+┌──────────┐       ┌───────────┐          ┌──────────┐       ┌──────────┐
+│ Products │ ───▶  │ Customize │  ───▶    │   Cart   │ ───▶  │   Order  │
+└──────────┘       └───────────┘          └──────────┘       └──────────┘
+```
+
 ---
 
-## Product Page & Price Calculation
+## 🛠️ Product Page & Price Calculation
 
 - The product page presents a step-by-step configurator.
 - Available options are filtered based on current selections and compatibility rules (e.g., "mountain wheels" only allow "full-suspension" frames).
 - Out-of-stock options are disabled.
 - Price is calculated by summing the base prices of selected options, plus any conditional price rules (e.g., "matte finish" + "full-suspension frame" = €50).
 
+**Price Calculation Example:**
+```
+Base Product: Mountain Bike (Base Price: €200)
+Selected Options:
+- Full-suspension frame: +€130
+- Matte finish: +€25 (standard)
+  * But with full-suspension frame: +€50 (conditional price rule)
+- Road wheels: +€80
+- Blue rim: +€20
+- Single-speed chain: +€43
+
+Total: €200 (base) + €130 + €50 + €80 + €20 + €43 = €523
+```
+
 ---
 
-## Add to Cart Action
+## 🛒 Add to Cart Action
 
 - When the user clicks "Add to Cart":
   - The backend validates the selected options for compatibility and stock.
   - If valid, the configuration is saved in the cart (including product, selected options, and quantity).
   - The cart is persisted in the database and associated with the user (or session).
 
+**Backend Process:**
+1. Validate all selected options against compatibility rules
+2. Check if all selected options are in stock
+3. Calculate the final price including any conditional pricing
+4. Create/update cart and cart item records
+5. Return success response or validation errors
+
 ---
 
-## Administrative Workflows
+## 👨‍💼 Administrative Workflows
 
 - **Product Management**: Create/edit products and their part categories.
 - **Option Management**: Add/edit options for each part category, set stock status.
@@ -100,23 +168,55 @@ The system uses a relational data model optimized for customizable products:
 - **Inventory**: Mark options as in or out of stock.
 - **Sales Analysis**: Review orders and popular configurations.
 
+**Admin Interface Capabilities:**
+- Create and manage product catalog
+- Define part categories and their display order
+- Add/edit/remove options for each part
+- Set up compatibility rules between options
+- Configure special pricing rules for option combinations
+- Update inventory status
+- View and manage orders
+
 ---
 
-## Creating New Products and Options
+## 🆕 Creating New Products and Options
 
 - **New Product**: Admin provides product name, description, base price, and defines part categories.
 - **New Option**: Admin adds a new option (e.g., rim color) to a part category via the admin UI/API. The database updates the `options` table.
 
+**Example: Adding a New Rim Color**
+1. Admin navigates to the Part Categories section and selects "Rim Color"
+2. Clicks "Add New Option"
+3. Provides details:
+   - Name: "Green"
+   - Base Price: €15
+   - In Stock: Yes
+   - Image: [uploads image]
+4. Clicks "Save"
+5. The system adds a new record to the `options` table
+6. The new rim color is now available for customers to select
+
 ---
 
-## Setting Prices and Price Rules
+## 💰 Setting Prices and Price Rules
 
 - Admin can set the base price for each option.
 - Admin can define conditional price rules (e.g., "matte finish" + "full-suspension frame" = €50) via the admin UI/API, which updates the `price_rules` table.
 
+**Example: Creating a Conditional Price Rule**
+1. Admin navigates to the Price Rules section
+2. Clicks "Add New Price Rule"
+3. Selects the following:
+   - Primary Option: "Matte Finish"
+   - Conditional Option: "Full-suspension Frame"
+   - Conditional Price: €50
+4. Clicks "Save"
+5. The system adds a new record to the `price_rules` table
+6. When a customer selects both options, the price will use the conditional price instead of the base price
+
 ---
 
-## Technical Decisions & Trade-offs
+## 🧩 Technical Decisions & Trade-offs
 
 - **Relational Database (PostgreSQL)**: Chosen for its ability to model complex relationships and enforce data integrity, especially for compatibility and pricing rules.
 - **Backend/Frontend Separation**: Enables independent scaling and parallel development.
@@ -124,9 +224,30 @@ The system uses a relational data model optimized for customizable products:
 - **Extensibility**: The model supports adding new product types and options without major changes.
 - **Validation Logic**: Compatibility and pricing logic is centralized in the backend for consistency and security.
 
+**Why PostgreSQL?**
+- Complex queries for compatibility rules and price calculations
+- Transactional integrity for cart and order operations
+- Rich data types and constraints
+- Excellent performance for relational data
+- Robust ecosystem and tooling
+
+**Why FastAPI?**
+- High performance for API endpoints
+- Built-in data validation with Pydantic
+- Automatic OpenAPI documentation
+- Async support for scalability
+- Type safety with Python type hints
+
+**Why Next.js?**
+- Server-side rendering for better SEO
+- Optimized performance with automatic code splitting
+- Excellent developer experience
+- Built-in API routes
+- Strong TypeScript support
+
 ---
 
-## Project Structure
+## 📁 Project Structure
 
 ```
 /
@@ -158,7 +279,7 @@ The system uses a relational data model optimized for customizable products:
 
 ---
 
-## How to Run the Project
+## 🏃‍♂️ How to Run the Project
 
 ### Prerequisites
 - Docker and Docker Compose
@@ -182,13 +303,13 @@ This will:
 ### Manual Start
 
 1. Clone the repository:
-```bash
-cd factorial-technical-test
-```
+   ```bash
+   cd factorial-technical-test
+   ```
 2. Start with Docker Compose:
-```bash
-docker compose up -d
-```
+   ```bash
+   docker compose up -d
+   ```
 3. Access the application:
    - Frontend: http://localhost:3000
    - API Backend: http://localhost:8000
@@ -202,7 +323,7 @@ docker compose exec backend pytest
 
 ---
 
-## Example API Endpoints
+## 🔌 Example API Endpoints
 
 - **Get all products:** `GET /api/v1/products/`
 - **Get product details:** `GET /api/v1/products/{product_id}`
@@ -216,13 +337,14 @@ docker compose exec backend pytest
 
 ---
 
-## Future Improvements
+## 🔮 Future Improvements
 
 - User authentication and role-based access control
 - Customer accounts and order history
 - Enhanced admin analytics
 - Support for more product types
 - Improved error handling and UI feedback
-
----
+- Internationalization and multi-currency support
+- Integration with payment gateways
+- Marketing features (discounts, promotions, etc.)
 
