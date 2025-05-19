@@ -14,34 +14,34 @@ interface CustomizeProductProps {
 const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
   const router = useRouter();
   const [selectedOptions, setSelectedOptions] = useState<Record<number, number>>({});
-  const [totalPrice, setTotalPrice] = useState<number>(0); // Inicializar a 0 y actualizar en useEffect
+  const [totalPrice, setTotalPrice] = useState<number>(0); // Initialize to 0 and update in useEffect
   const [availableOptions, setAvailableOptions] = useState<AvailablePartType[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState<number | null>(null);
 
-  // Log para depuración
-  console.log('>>>>>>> PRODUCTO RECIBIDO EN CUSTOMIZEPRODUCT:', product);
-  console.log('>>>>>>> PRECIO BASE DEL PRODUCTO:', product.basePrice, typeof product.basePrice);
-  console.log('>>>>>>> PRECIO BASE CONVERTIDO A NÚMERO:', Number(product.basePrice));
-  console.log('>>>>>>> OBJETO COMPLETO DEL PRODUCTO:', JSON.stringify(product, null, 2));
+  // Debug logging
+  console.log('>>>>>>> PRODUCT RECEIVED IN CUSTOMIZEPRODUCT:', product);
+  console.log('>>>>>>> PRODUCT BASE PRICE:', product.basePrice, typeof product.basePrice);
+  console.log('>>>>>>> BASE PRICE CONVERTED TO NUMBER:', Number(product.basePrice));
+  console.log('>>>>>>> COMPLETE PRODUCT OBJECT:', JSON.stringify(product, null, 2));
 
-  // Efecto para inicializar el precio base correctamente - usar SOLO datos de la API
+  // Effect to initialize the base price correctly - use ONLY API data
   useEffect(() => {
-    // Obtener el precio base usando la función de utilidad
+    // Get the base price using the utility function
     const basePrice = convertToValidPrice(product.basePrice, 0);
     
-    // Actualizar el precio total
+    // Update the total price
     if (basePrice > 0) {
-      console.log(`Inicializando precio total con precio base: ${basePrice}`);
+      console.log(`Initializing total price with base price: ${basePrice}`);
       setTotalPrice(basePrice);
     } else {
-      console.warn('Inicializando precio total a 0 porque no se encontró un precio base válido');
+      console.warn('Initializing total price to 0 because no valid base price was found');
       setTotalPrice(0);
     }
   }, [product]);
 
-  // Cargar opciones disponibles cuando cambia la selección
+  // Load available options when selection changes
   useEffect(() => {
     const loadOptions = async () => {
       setLoading(true);
@@ -49,34 +49,34 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
       try {
         const selectedOptionIds = Object.values(selectedOptions);
         
-        console.log('Product ID para opciones:', product.id);
-        console.log('Opciones seleccionadas:', selectedOptionIds);
+        console.log('Product ID for options:', product.id);
+        console.log('Selected options:', selectedOptionIds);
         
-        // Obtener opciones disponibles de la API
+        // Get available options from the API
         const options = await ProductsApi.getProductOptions(product.id, selectedOptionIds);
-        console.log('Opciones disponibles recibidas:', options);
+        console.log('Available options received:', options);
         
-        // Log detallado de opciones para depuración
+        // Detailed log of options for debugging
         options.forEach(partType => {
-          console.log(`Opciones para ${partType.name} (ID: ${partType.id}):`);
+          console.log(`Options for ${partType.name} (ID: ${partType.id}):`);
           partType.options.forEach(option => {
-            console.log(`- ${option.name} (ID: ${option.id}): compatible=${option.is_compatible}, disponible=${option.available_for_selection !== false}, seleccionada=${option.selected || false}`);
+            console.log(`- ${option.name} (ID: ${option.id}): compatible=${option.is_compatible}, available=${option.available_for_selection !== false}, selected=${option.selected || false}`);
           });
         });
         
         if (Array.isArray(options)) {
-          // Verificar compatibilidad de las opciones seleccionadas
+          // Verify compatibility of selected options
           if (selectedOptionIds.length > 0) {
             try {
               const compatibilityResult = await ProductsApi.validateCompatibility(selectedOptionIds, product.id);
-              console.log('Resultado de compatibilidad:', compatibilityResult);
+              console.log('Compatibility result:', compatibilityResult);
               
-              // Actualizar las opciones con el resultado de compatibilidad del backend
+              // Update options with the compatibility result from the backend
               if (compatibilityResult && compatibilityResult.product && compatibilityResult.product.components) {
-                // Usar directamente la respuesta del backend que incluye el estado actualizado de compatibilidad
+                // Use the backend response directly, which includes the updated compatibility status
                 const updatedComponents = compatibilityResult.product.components;
                 
-                // Convertir los componentes del formato de respuesta API al formato usado en el frontend
+                // Convert components from API response format to frontend format
                 const updatedOptions = updatedComponents.map((component: any) => ({
                   id: component.id,
                   name: component.name,
@@ -92,30 +92,30 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
                   }))
                 }));
                 
-                console.log('Opciones actualizadas con estado de compatibilidad:', updatedOptions);
+                console.log('Options updated with compatibility status:', updatedOptions);
                 setAvailableOptions(updatedOptions);
               } else {
-                // Si la respuesta no tiene el formato esperado, usar las opciones originales
-                console.warn('La respuesta de compatibilidad no tiene el formato esperado, usando opciones originales');
+                // If the response doesn't have the expected format, use the original options
+                console.warn('Compatibility response does not have the expected format, using original options');
                 setAvailableOptions(options);
               }
             } catch (compatibilityError) {
-              console.error('Error al validar compatibilidad:', compatibilityError);
-              // En caso de error de compatibilidad, mostrar las opciones tal cual vienen de la API
+              console.error('Error validating compatibility:', compatibilityError);
+              // In case of compatibility error, show options as they come from the API
               setAvailableOptions(options);
             }
           } else {
             setAvailableOptions(options);
           }
           
-          // Procesar opciones auto-seleccionadas por el backend
+          // Process auto-selected options from the backend
           const newSelections = { ...selectedOptions };
           let selectionUpdated = false;
           
           options.forEach(partType => {
             partType.options.forEach(option => {
               if (option.selected && (!newSelections[partType.id] || newSelections[partType.id] !== option.id)) {
-                console.log(`Auto-seleccionando opción: ${option.name} (ID: ${option.id}) del tipo ${partType.name}`);
+                console.log(`Auto-selecting option: ${option.name} (ID: ${option.id}) of type ${partType.name}`);
                 newSelections[partType.id] = option.id;
                 selectionUpdated = true;
               }
@@ -123,11 +123,11 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
           });
           
           if (selectionUpdated) {
-            console.log('Actualizando selecciones con auto-selección del backend:', newSelections);
+            console.log('Updating selections with backend auto-selection:', newSelections);
             setSelectedOptions(newSelections);
           }
           
-          // Calcular precio total
+          // Calculate total price
           if (selectedOptionIds.length > 0) {
             try {
               const price = await ProductsApi.calculatePrice(selectedOptionIds);
@@ -137,19 +137,19 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
                 setTotalPrice(Math.max(newTotalPrice, basePrice));
               }
             } catch (priceError) {
-              console.error('Error al calcular precio:', priceError);
+              console.error('Error calculating price:', priceError);
               setTotalPrice(product.basePrice || 0);
             }
           } else {
             setTotalPrice(product.basePrice || 0);
           }
         } else {
-          console.error('Formato de opciones inesperado:', options);
-          setError('Las opciones recibidas tienen un formato inesperado.');
+          console.error('Unexpected options format:', options);
+          setError('The received options have an unexpected format.');
         }
       } catch (error) {
-        console.error('Error al cargar opciones:', error);
-        setError('No se pudieron cargar las opciones. Por favor, recarga la página.');
+        console.error('Error loading options:', error);
+        setError('Could not load options. Please reload the page.');
         setTotalPrice(product.basePrice || 0);
       } finally {
         setLoading(false);
@@ -160,91 +160,91 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
   }, [selectedOptions, product]);
 
   const handleOptionSelect = (partTypeId: number, optionId: number) => {
-    console.log(`Seleccionando opción: partTypeId=${partTypeId}, optionId=${optionId}`);
+    console.log(`Selecting option: partTypeId=${partTypeId}, optionId=${optionId}`);
     
-    // Obtener la opción seleccionada para obtener su precio
+    // Get the selected option to get its price
     let selectedOption: any = null;
     const partType = partTypesToRender.find(pt => pt.id === partTypeId);
     if (partType) {
-      // Asegurar que options existe y es un array
+      // Ensure options exists and is an array
       const options = Array.isArray(partType.options) ? partType.options : [];
       selectedOption = options.find(opt => opt.id === optionId);
     }
 
-    // Detección especial para Aro Rojo
+    // Special detection for Red Rim
     if (selectedOption && selectedOption.name === "Aro Rojo") {
-      console.log("********** SELECCIÓN DE ARO ROJO DETECTADA **********");
-      console.log("Precio base actual:", product.basePrice);
-      console.log("Precio total actual:", totalPrice);
-      console.log("Opciones seleccionadas antes de Aro Rojo:", selectedOptions);
+      console.log("********** RED RIM SELECTION DETECTED **********");
+      console.log("Current base price:", product.basePrice);
+      console.log("Current total price:", totalPrice);
+      console.log("Selected options before Red Rim:", selectedOptions);
     }
     
-    // Capturar las selecciones actuales para hacer logging después
+    // Capture current selections for logging after
     const prevSelections = {...selectedOptions};
     
-    // Actualizar las opciones seleccionadas - permitir deseleccionar
+    // Update selected options - allow deselection
     setSelectedOptions(prev => {
-      // Si la opción ya está seleccionada, la deseleccionamos
+      // If the option is already selected, deselect it
       if (prev[partTypeId] === optionId) {
         const newSelection = {...prev};
         delete newSelection[partTypeId];
-        console.log('Opción deseleccionada:', optionId);
-        console.log('Nueva selección:', newSelection);
+        console.log('Option deselected:', optionId);
+        console.log('New selection:', newSelection);
         return newSelection;
       } else {
-        // Si no está seleccionada, la seleccionamos
+        // If not selected, select it
         const newSelection = {
           ...prev,
           [partTypeId]: optionId,
         };
-        console.log('Nueva selección:', newSelection);
+        console.log('New selection:', newSelection);
 
-        // Para detectar específicamente si estamos seleccionando Aro Rojo
+        // To specifically detect if we're selecting Red Rim
         if (selectedOption && selectedOption.name === "Aro Rojo") {
-          console.log("IDs de opciones después de seleccionar Aro Rojo:", Object.values(newSelection));
+          console.log("Option IDs after selecting Red Rim:", Object.values(newSelection));
         }
         return newSelection;
       }
     });
     
-    // No recalculamos el precio aquí porque el useEffect se encargará de ello
-    // Solo registramos la información para depuración
+    // We don't recalculate the price here because the useEffect will handle it
+    // We just log the information for debugging
     if (selectedOption) {
-      console.log(`Opción seleccionada: ${selectedOption.name}, precio: ${selectedOption.base_price}`);
+      console.log(`Selected option: ${selectedOption.name}, price: ${selectedOption.base_price}`);
     }
   };
 
   const handleAddToCart = async () => {
     try {
       setLoading(true);
-      console.log("=== INICIANDO PROCESO DE AÑADIR AL CARRITO ===");
+      console.log("=== STARTING ADD TO CART PROCESS ===");
       
-      // 1. Preparar los datos
+      // 1. Prepare the data
       const productId = product.id;
       const selectedOptionIds = Object.values(selectedOptions);
       
-      console.log(`Producto ID: ${productId}`);
-      console.log(`Opciones seleccionadas: ${selectedOptionIds.join(", ")}`);
+      console.log(`Product ID: ${productId}`);
+      console.log(`Selected options: ${selectedOptionIds.join(", ")}`);
       
-      // 2. Validar compatibilidad antes de enviar al carrito
-      console.log("Validando compatibilidad de opciones...");
+      // 2. Validate compatibility before sending to cart
+      console.log("Validating options compatibility...");
       const compatibilityResult = await ProductsApi.validateCompatibility(selectedOptionIds, productId);
       
-      console.log("Resultado de compatibilidad completo:", compatibilityResult);
+      console.log("Complete compatibility result:", compatibilityResult);
       
-      // Verificar si alguna opción seleccionada es incompatible
+      // Check if any selected option is incompatible
       let isIncompatible = false;
       let incompatibilityDetails = null;
       
       if (compatibilityResult.product && compatibilityResult.product.components) {
-        // Examinar cada componente y cada opción seleccionada
+        // Examine each component and each selected option
         for (const component of compatibilityResult.product.components) {
           for (const option of component.options) {
             if (option.selected && option.is_compatible === false) {
               isIncompatible = true;
-              console.log(`Opción incompatible encontrada: ${option.name} (ID: ${option.id})`);
+              console.log(`Incompatible option found: ${option.name} (ID: ${option.id})`);
               
-              // Capturar detalles de incompatibilidad si existen
+              // Capture incompatibility details if they exist
               if (option.compatibility_details) {
                 incompatibilityDetails = {
                   type: option.compatibility_details.reason,
@@ -254,7 +254,7 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
                   excluded_option_name: undefined
                 };
                 
-                // Añadir detalles específicos según el tipo de incompatibilidad
+                // Add specific details based on incompatibility type
                 if (option.compatibility_details.reason === "requires") {
                   incompatibilityDetails.required_option_name = option.compatibility_details.dependency_name;
                 } else if (option.compatibility_details.reason === "excludes") {
@@ -267,47 +267,47 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
           if (isIncompatible) break;
         }
       } else if (compatibilityResult.is_compatible === false) {
-        // Formato antiguo de respuesta
+        // Old response format
         isIncompatible = true;
         incompatibilityDetails = compatibilityResult.incompatibility_details;
       }
       
-      // Si hay incompatibilidad, mostrar mensaje y detener
+      // If there's incompatibility, show message and stop
       if (isIncompatible) {
-        let errorMessage = 'Las opciones seleccionadas no son compatibles entre sí.';
+        let errorMessage = 'The selected options are not compatible with each other.';
         
         if (incompatibilityDetails) {
           if (incompatibilityDetails.type === 'excludes') {
-            errorMessage = `La opción "${incompatibilityDetails.option_name}" no es compatible con "${incompatibilityDetails.excluded_option_name}".`;
+            errorMessage = `The option "${incompatibilityDetails.option_name}" is not compatible with "${incompatibilityDetails.excluded_option_name}".`;
           } else if (incompatibilityDetails.type === 'requires') {
-            errorMessage = `La opción "${incompatibilityDetails.option_name}" requiere seleccionar "${incompatibilityDetails.required_option_name}".`;
+            errorMessage = `The option "${incompatibilityDetails.option_name}" requires selecting "${incompatibilityDetails.required_option_name}".`;
           }
         }
         
-        alert(`No se puede añadir al carrito: ${errorMessage} Por favor, elige otra combinación.`);
+        alert(`Cannot add to cart: ${errorMessage} Please choose another combination.`);
         setLoading(false);
         return;
       }
       
-      // 3. Usar CartApi para añadir al carrito
+      // 3. Use CartApi to add to cart
       const result = await CartApi.addToCart({
         product_id: productId,
         selected_options: selectedOptionIds,
         quantity: 1
       });
       
-      console.log("Producto añadido al carrito:", result);
+      console.log("Product added to cart:", result);
       
-      // 4. Mostrar mensaje y redirigir
-      alert('¡Producto añadido al carrito!');
+      // 4. Show message and redirect
+      alert('Product added to cart!');
       router.push('/cart');
       
     } catch (error) {
-      console.error("ERROR AL AÑADIR AL CARRITO:", error);
-      let errorMessage = 'No se pudo añadir al carrito';
+      console.error("ERROR ADDING TO CART:", error);
+      let errorMessage = 'Could not add to cart';
       
       if (error instanceof Error) {
-        // Si es un error de la API, intentar extraer el mensaje
+        // If it's an API error, try to extract the message
         const apiError = error as any;
         if (apiError.response?.data?.detail) {
           errorMessage = apiError.response.data.detail;
@@ -321,17 +321,17 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
     }
   };
 
-  // Determinar qué opciones mostrar - usar las opciones disponibles de la API o de partTypes del producto
+  // Determine which options to show - use available options from API or product's partTypes
   const usePartTypes = availableOptions.length === 0;
   const partTypesToRender = usePartTypes ? (product.partTypes || []) : availableOptions;
   
-  console.log('Usando opciones de partTypes del producto:', usePartTypes);
-  console.log('PartTypes a renderizar:', partTypesToRender);
+  console.log('Using product partTypes options:', usePartTypes);
+  console.log('PartTypes to render:', partTypesToRender);
 
-  // Verificar si el producto es personalizable
+  // Check if the product is customizable
   const isProductPersonalizable = partTypesToRender.length > 0;
 
-  // Nueva función para desplazarse a una sección
+  // New function to scroll to a section
   const scrollToSection = (partTypeId: number) => {
     setActiveSection(partTypeId);
     const element = document.getElementById(`part-type-${partTypeId}`);
@@ -347,8 +347,8 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
           <div>
             <p className="mt-2 text-lg text-gray-600">
               {isProductPersonalizable 
-                ? 'Personaliza tu bicicleta seleccionando las opciones a continuación'
-                : 'Detalles del producto'}
+                ? 'Personalize your bike by selecting the options below'
+                : 'Product details'}
             </p>
           </div>
           {isProductPersonalizable && (
@@ -356,7 +356,7 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-primary mr-1" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
               </svg>
-              <span>Personalización avanzada disponible</span>
+              <span>Advanced customization available</span>
             </div>
           )}
         </div>
@@ -370,8 +370,8 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
                 <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
               </div>
               <div>
-                <p className="text-lg font-medium text-gray-900">Actualizando configuración</p>
-                <p className="text-sm text-gray-500">Un momento, por favor...</p>
+                <p className="text-lg font-medium text-gray-900">Updating configuration</p>
+                <p className="text-sm text-gray-500">One moment, please...</p>
               </div>
             </div>
           </div>
@@ -391,24 +391,24 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
         <div className="text-center p-8 bg-white rounded-lg border border-gray-200 shadow-sm mb-6">
           <div className="mb-6 max-w-3xl mx-auto">
             <div className="text-left">
-              <p className="text-gray-600 mb-6">{product.description || 'Bicicleta de alta calidad con configuración estándar.'}</p>
+              <p className="text-gray-600 mb-6">{product.description || 'High-quality bike with standard configuration.'}</p>
               
               <div className="mb-8 p-5 bg-gray-50 rounded-lg border border-gray-100">
-                <h3 className="font-semibold text-secondary mb-3">Características del producto</h3>
+                <h3 className="font-semibold text-secondary mb-3">Product features</h3>
                 <ul className="list-disc pl-5 text-gray-600 space-y-2">
-                  <li>Categoría: <span className="font-medium">{product.category}</span></li>
-                  <li>Precio: <span className="font-medium text-primary text-lg">
+                  <li>Category: <span className="font-medium">{product.category}</span></li>
+                  <li>Price: <span className="font-medium text-primary text-lg">
                     €{formatPrice(product.basePrice)}
                   </span></li>
-                  {product.description && <li>Descripción completa: <span className="font-medium">{product.description}</span></li>}
+                  {product.description && <li>Complete description: <span className="font-medium">{product.description}</span></li>}
                 </ul>
               </div>
               
               <div className="p-5 border rounded-lg bg-gray-50 mb-8">
-                <h4 className="font-semibold text-secondary mb-2">Información adicional</h4>
+                <h4 className="font-semibold text-secondary mb-2">Additional information</h4>
                 <p className="text-gray-600">
-                  Este modelo cuenta con una configuración estándar de alta calidad. 
-                  No requiere personalización adicional y está listo para ser utilizado inmediatamente.
+                  This model comes with a standard high-quality configuration. 
+                  It doesn't require additional customization and is ready to be used immediately.
                 </p>
               </div>
               
@@ -421,18 +421,18 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
                       selected_options: [],
                       quantity: 1
                     }).then(() => {
-                      alert('Producto añadido al carrito');
+                      alert('Product added to cart');
                       router.push('/cart');
                     }).catch(err => {
-                      console.error('Error al añadir al carrito:', err);
-                      alert('Ocurrió un error al añadir el producto al carrito');
+                      console.error('Error adding to cart:', err);
+                      alert('An error occurred while adding the product to the cart');
                     });
                   }}
                 >
-                  Añadir al carrito
+                  Add to cart
                 </button>
                 <Link href="/products" className="btn btn-outline flex-1 py-3">
-                  Ver otros modelos
+                  View other models
                 </Link>
               </div>
             </div>
@@ -440,37 +440,37 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
           
           <div className="mt-8 text-xs text-gray-400 border-t border-gray-100 pt-4">
             <details>
-              <summary className="cursor-pointer hover:text-gray-500">Información técnica (solo para desarrolladores)</summary>
+              <summary className="cursor-pointer hover:text-gray-500">Technical information (for developers only)</summary>
               <p className="mt-2">
-                ID: {product.id}, Categoría: {product.category}
+                ID: {product.id}, Category: {product.category}
               </p>
             </details>
           </div>
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Panel de opciones - 8 columnas en pantallas grandes */}
+          {/* Panel of options - 8 columns on large screens */}
           <div className="lg:col-span-8 space-y-6">
-            {/* Vista previa del producto */}
+            {/* Product preview */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-2xl font-bold text-gray-800">Tu {product.name}</h2>
+                <h2 className="text-2xl font-bold text-gray-800">Your {product.name}</h2>
                 <span className="px-4 py-1.5 bg-primary bg-opacity-10 text-primary rounded-full text-sm font-medium">
-                  Personalización
+                  Customization
                 </span>
               </div>
               
               <div className="relative aspect-video bg-gradient-to-b from-gray-50 to-gray-100 rounded-lg flex items-center justify-center mb-4">
-                {/* Aquí iría la imagen de vista previa de la bicicleta */}
+                {/* Here would go the preview image of the bike */}
                 <div className="text-center p-6">
-                  <p className="text-gray-400 mb-2">Vista previa de tu bicicleta personalizada</p>
-                  <p className="text-xs text-gray-400">La imagen es ilustrativa y puede variar</p>
+                  <p className="text-gray-400 mb-2">Preview of your customized bike</p>
+                  <p className="text-xs text-gray-400">The image is illustrative and may vary</p>
                 </div>
               </div>
               
             </div>
 
-            {/* Secciones de selección de componentes */}
+            {/* Selection sections of components */}
             {partTypesToRender.map((partType) => (
               <div id={`part-type-${partType.id}`} key={partType.id} className={`bg-white rounded-xl shadow-sm border transition-all duration-300 ${
                 activeSection === partType.id 
@@ -484,14 +484,14 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
                 {partType.options && partType.options.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {partType.options.map((option) => {
-                      // Usar directamente el valor de is_compatible del backend
+                      // Use directly the value of is_compatible from the backend
                       const isIncompatible = option.is_compatible === false;
                       const isNotAvailable = option.available_for_selection === false;
                       const isSelected = selectedOptions[partType.id] === option.id;
                       
-                      // Logs para depuración
+                      // Logs for debugging
                       if (partType.name === 'Horquilla') {
-                        console.log(`Renderizando horquilla ${option.name}: compatible=${option.is_compatible}, disponible=${option.available_for_selection !== false}, seleccionada=${isSelected}`);
+                        console.log(`Rendering horquilla ${option.name}: compatible=${option.is_compatible}, available=${option.available_for_selection !== false}, selected=${isSelected}`);
                       }
                       
                       return (
@@ -510,19 +510,19 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
                           `}
                           onClick={() => {
                             if (isSelected) {
-                              // Permitir deselección si ya está seleccionada
+                              // Allow deselection if already selected
                               handleOptionSelect(partType.id, option.id);
                             } else if (!isIncompatible && !isNotAvailable) {
                               handleOptionSelect(partType.id, option.id);
                             } else if (isNotAvailable) {
-                              alert(`Ya has seleccionado otra opción de ${partType.name}. Debes deseleccionar esa opción primero.`);
+                              alert(`You've already selected another option from ${partType.name}. You must deselect that option first.`);
                             } else {
-                              // Mostrar una alerta más descriptiva que indique por qué no es compatible
-                              alert(`La opción "${option.name}" no es compatible con tu selección actual. Por favor, selecciona otra opción o cambia tus selecciones previas.`);
+                              // Show a more descriptive alert that indicates why it's not compatible
+                              alert(`The option "${option.name}" is not compatible with your current selection. Please select another option or change your previous selections.`);
                             }
                           }}
                         >
-                          {/* Imagen o icono de la opción (placeholder) */}
+                          {/* Image or icon of the option (placeholder) */}
                           <div className="w-full h-24 bg-gradient-to-r from-gray-100 to-gray-200 rounded-lg mb-3 flex items-center justify-center">
                             <span className="text-gray-400 text-xs">{option.name}</span>
                           </div>
@@ -541,7 +541,7 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
                               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                               </svg>
-                              <span>No compatible con tu selección actual</span>
+                              <span>Not compatible with your current selection</span>
                             </div>
                           )}
                           
@@ -550,7 +550,7 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
                               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                               </svg>
-                              <span>Ya has seleccionado otra opción</span>
+                              <span>You've already selected another option</span>
                             </div>
                           )}
 
@@ -562,7 +562,7 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
                             </div>
                           )}
 
-                          {/* Añadir un icono de prohibido para opciones incompatibles */}
+                          {/* Add a forbidden icon for incompatible options */}
                           {isIncompatible && (
                             <div className="absolute top-3 right-3 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center">
                               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -576,22 +576,22 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
                   </div>
                 ) : (
                   <div className="p-6 text-center bg-gray-50 rounded-lg border border-dashed border-gray-200">
-                    <p className="text-gray-500">No hay opciones disponibles para este tipo de componente.</p>
+                    <p className="text-gray-500">No options available for this component type.</p>
                   </div>
                 )}
               </div>
             ))}
           </div>
 
-          {/* Panel de resumen - 4 columnas en pantallas grandes */}
+          {/* Summary panel - 4 columns on large screens */}
           <div className="lg:col-span-4">
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 sticky top-8">
-              <h2 className="text-xl font-bold text-gray-800 mb-6">Resumen de tu pedido</h2>
+              <h2 className="text-xl font-bold text-gray-800 mb-6">Order summary</h2>
               
-              {/* Progreso de la personalización */}
+              {/* Customization progress */}
               <div className="mb-6">
                 <div className="flex justify-between mb-2">
-                  <span className="text-sm text-gray-600">Progreso</span>
+                  <span className="text-sm text-gray-600">Progress</span>
                   <span className="text-sm font-medium">
                     {Object.keys(selectedOptions).length}/{partTypesToRender.length}
                   </span>
@@ -606,23 +606,23 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
                 </div>
               </div>
               
-              {/* Precio base */}
+              {/* Base price */}
               <div className="rounded-lg bg-gray-50 p-4 mb-6">
                 <div className="flex justify-between mb-2">
-                  <span className="font-medium text-gray-700">Precio base</span>
+                  <span className="font-medium text-gray-700">Base price</span>
                   <span className="font-bold">
                     €{formatPrice(product.basePrice)}
                   </span>
                 </div>
               </div>
               
-              {/* Opciones seleccionadas */}
+              {/* Selected options */}
               <div className="space-y-3 mb-6">
-                <h3 className="text-sm font-medium text-gray-500 mb-3">COMPONENTES SELECCIONADOS</h3>
+                <h3 className="text-sm font-medium text-gray-500 mb-3">SELECTED COMPONENTS</h3>
                 
                 {partTypesToRender.map((partType) => {
                   const selectedOptionId = selectedOptions[partType.id];
-                  let selectedOptionName = 'No seleccionado';
+                  let selectedOptionName = 'Not selected';
                   let selectedOptionPrice = 0;
                   let isCompatible = true;
                   
@@ -645,7 +645,7 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
                         <div>
                           <span className="text-xs text-gray-500">{partType.name}</span>
                           <div className={`font-medium ${!isCompatible ? 'text-red-500' : 'text-gray-800'}`}>
-                            {selectedOptionId ? selectedOptionName : 'No seleccionado'}
+                            {selectedOptionId ? selectedOptionName : 'Not selected'}
                           </div>
                         </div>
                         {selectedOptionId && (
@@ -655,11 +655,11 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
                             </span>
                             <button 
                               onClick={(e) => {
-                                e.stopPropagation(); // Evitar que se active el onClick del contenedor
+                                e.stopPropagation(); // Prevent the onClick of the container from being active
                                 handleOptionSelect(partType.id, selectedOptionId);
                               }}
                               className="text-gray-400 hover:text-red-500 transition-colors"
-                              title="Deseleccionar opción"
+                              title="Deselect option"
                             >
                               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -681,10 +681,10 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
                     €{totalPrice.toFixed(2)}
                   </span>
                 </div>
-                <p className="text-xs text-gray-500 mb-6">Los precios incluyen IVA</p>
+                <p className="text-xs text-gray-500 mb-6">Prices include VAT</p>
               </div>
               
-              {/* Botón de añadir al carrito */}
+              {/* Add to cart button */}
               <button 
                 className={`w-full py-4 px-6 rounded-xl font-bold text-white transition-all ${
                   loading || !partTypesToRender.every(partType => selectedOptions[partType.id] !== undefined)
@@ -702,20 +702,20 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
-                    Procesando...
+                    Processing...
                   </span>
                 ) : !partTypesToRender.every(partType => selectedOptions[partType.id] !== undefined) ? (
-                  'Selecciona todas las opciones'
+                  'Select all options'
                 ) : (
-                  'Añadir al carrito'
+                  'Add to cart'
                 )}
               </button>
               
-              {/* Opciones pendientes de selección */}
+              {/* Pending options to select */}
               {!partTypesToRender.every(partType => selectedOptions[partType.id] !== undefined) && (
                 <div className="mt-4 p-4 bg-amber-50 rounded-lg">
                   <p className="text-amber-700 text-sm font-medium">
-                    Aún necesitas seleccionar {partTypesToRender.length - Object.keys(selectedOptions).length} opciones para continuar:
+                    You still need to select {partTypesToRender.length - Object.keys(selectedOptions).length} options to continue:
                   </p>
                   <ul className="mt-2 text-xs text-amber-600 pl-5 list-disc">
                     {partTypesToRender.filter(partType => !selectedOptions[partType.id]).map(partType => (

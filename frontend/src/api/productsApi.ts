@@ -22,14 +22,14 @@ const transformProductData = (data: any): Product => {
   // Verify that part_types exists and is an array
   const partTypes = Array.isArray(data.part_types) ? data.part_types : [];
   
-  // Transformar datos básicos del producto usando nuestra función de utilidad
+  // Transform basic product data using our utility function
   const transformed = transformApiData(data);
   
-  // Asignar valores por defecto para campos que podrían faltar
+  // Assign default values for fields that might be missing
   transformed.basePrice = convertToValidPrice(data.base_price || data.basePrice, 0);
   transformed.image = data.image_url || data.image || 'https://images.unsplash.com/photo-1576435728678-68d0fbf94e91?q=80&w=1200';
   
-  // Transformar tipos de partes y opciones
+  // Transform part types and options
   transformed.partTypes = partTypes.map((pt: any) => ({
     id: pt.id,
     name: pt.name,
@@ -252,7 +252,7 @@ export const ProductsApi = {
       // Get the price from the response object and ensure it's a valid number
       const total_price = response.data.total_price;
       
-      // Usar nuestra función de utilidad para convertir y validar el precio
+      // Use our utility function to convert and validate the price
       return convertToValidPrice(total_price, 0);
     } catch (error) {
       console.error('Error al calcular precio:', error);
@@ -268,7 +268,7 @@ export const ProductsApi = {
     try {
       console.log('Creando nuevo producto:', productData);
       
-      // Usar función de utilidad para transformar datos para la API
+      // Use utility function to transform data for the API
       const dataToSend = transformDataForApi(productData);
       
       console.log('Datos formateados para enviar al backend:', dataToSend);
@@ -309,11 +309,11 @@ export const ProductsApi = {
         throw new Error(`Error al parsear respuesta: ${parseError}`);
       }
       
-      // Si hay un error en la respuesta pero el código es exitoso, crear producto mínimo
+      // If there's an error in the response but the code is successful, create minimal product
       if (!data && response.status >= 200 && response.status < 300) {
         console.warn('Respuesta del backend es null pero el código es exitoso. Creando producto mínimo...');
         
-        // Crear un producto mínimo basado en los datos enviados
+        // Create a minimal product based on the sent data
         const minimalProduct: Product = {
           id: Math.floor(Math.random() * 10000), // ID temporal
           name: productData.name || 'Nuevo producto',
@@ -326,13 +326,13 @@ export const ProductsApi = {
         return minimalProduct;
       }
       
-      // Verificar que la data contiene la información esperada
+      // Verify that the data contains the expected information
       if (!data || !data.id) {
         console.error('Respuesta del backend no contiene un ID de producto:', data);
         
-        // Si hay algún tipo de dato en la respuesta, intentar usarlo
+        // If there's some kind of data in the response, try to use it
         if (data) {
-          // Crear un producto con datos disponibles y un ID temporal
+          // Create a product with available data and a temporary ID
           const partialProduct: Product = {
             id: data.id || Math.floor(Math.random() * 10000),
             name: data.name || productData.name || 'Nuevo producto',

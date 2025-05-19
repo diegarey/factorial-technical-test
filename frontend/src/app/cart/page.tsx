@@ -36,64 +36,64 @@ export default function CartPage() {
   const fetchCart = async () => {
     try {
       setLoading(true);
-      console.log('Obteniendo carrito...');
-      console.log('Cookies actuales:', document.cookie);
+      console.log('Obtaining cart...');
+      console.log('Current cookies:', document.cookie);
       
-      // Intentar obtener el ID del carrito guardado en localStorage si existe
+      // Attempt to get the cart ID saved in localStorage if it exists
       let cartIdFromStorage = null;
       try {
         cartIdFromStorage = localStorage.getItem('marcus_bikes_cart_id');
-        console.log('ID del carrito en localStorage:', cartIdFromStorage);
+        console.log('Cart ID in localStorage:', cartIdFromStorage);
       } catch (e) {
-        console.warn('Error al acceder a localStorage:', e);
+        console.warn('Error accessing localStorage:', e);
       }
       
       const cartData = await CartApi.getCart();
-      console.log('Datos del carrito recibidos:', cartData);
+      console.log('Cart data received:', cartData);
       setCart(cartData);
       
-      // Si recibimos un carrito con ID, guardarlo en localStorage
+      // If we receive a cart with ID, save it in localStorage
       if (cartData && cartData.id) {
         try {
           localStorage.setItem('marcus_bikes_cart_id', cartData.id.toString());
-          console.log('ID del carrito guardado en localStorage:', cartData.id);
+          console.log('Cart ID saved in localStorage:', cartData.id);
         } catch (e) {
-          console.warn('Error al guardar ID en localStorage:', e);
+          console.warn('Error saving ID in localStorage:', e);
         }
       }
       
-      // Si hay productos en el carrito, cargar sus detalles
+      // If there are products in the cart, load their details
       if (cartData && cartData.items.length > 0) {
         await fetchProductsDetails(cartData.items);
       }
       
-      // Verificar de nuevo las cookies después de recibir el carrito
-      console.log('Cookies después de cargar el carrito:', document.cookie);
+      // Verify cookies again after receiving the cart
+      console.log('Cookies after loading cart:', document.cookie);
     } catch (error) {
-      console.error('Error al cargar el carrito:', error);
-      setError('No se pudo cargar el carrito. Inténtalo de nuevo más tarde.');
+      console.error('Error loading cart:', error);
+      setError('Unable to load cart. Please try again later.');
     } finally {
       setLoading(false);
     }
   };
 
-  // Función para cargar los detalles de los productos y opciones
+  // Function to load product and option details
   const fetchProductsDetails = async (items: CartItem[]) => {
     try {
-      // Obtener IDs únicos de productos
+      // Get unique product IDs
       const productIds = Array.from(new Set(items.map(item => item.product_id)));
       
-      // Crear un objeto para almacenar los datos de los productos
+      // Create an object to store product data
       const productsMap: Record<number, Product> = {};
       const optionsMap: Record<number, {name: string, price: number, partType: string}> = {};
       
-      // Cargar detalles de cada producto
+      // Load details for each product
       for (const productId of productIds) {
         try {
           const productData = await ProductsApi.getProduct(productId);
           productsMap[productId] = productData;
           
-          // Cargar detalles de todas las opciones disponibles para este producto
+          // Load details for all available options for this product
           if (productData.partTypes) {
             productData.partTypes.forEach(partType => {
               partType.options.forEach(option => {
@@ -106,14 +106,14 @@ export default function CartPage() {
             });
           }
         } catch (err) {
-          console.error(`Error al cargar el producto ${productId}:`, err);
+          console.error(`Error loading product ${productId}:`, err);
         }
       }
       
       setProductsData(productsMap);
       setOptionsData(optionsMap);
     } catch (error) {
-      console.error('Error al cargar detalles de productos:', error);
+      console.error('Error loading product details:', error);
     }
   };
 
@@ -123,10 +123,10 @@ export default function CartPage() {
     try {
       setLoading(true);
       await CartApi.updateCartItemQuantity(itemId, quantity);
-      await fetchCart(); // Recargar el carrito
+      await fetchCart(); // Reload cart
     } catch (error) {
-      console.error('Error al actualizar la cantidad:', error);
-      setError('No se pudo actualizar la cantidad. Inténtalo de nuevo más tarde.');
+      console.error('Error updating quantity:', error);
+      setError('Unable to update quantity. Please try again later.');
     } finally {
       setLoading(false);
     }
@@ -136,20 +136,20 @@ export default function CartPage() {
     try {
       setLoading(true);
       await CartApi.removeCartItem(itemId);
-      await fetchCart(); // Recargar el carrito
+      await fetchCart(); // Reload cart
     } catch (error) {
-      console.error('Error al eliminar el producto:', error);
-      setError('No se pudo eliminar el producto. Inténtalo de nuevo más tarde.');
+      console.error('Error removing product:', error);
+      setError('Unable to remove product. Please try again later.');
     } finally {
       setLoading(false);
     }
   };
 
-  // Calcular el total del carrito
+  // Calculate the total of the cart
   const calculateTotal = () => {
     if (!cart || cart.items.length === 0) return 0;
     return cart.items.reduce((total, item) => {
-      // Asegurar que price_snapshot sea un número
+      // Ensure price_snapshot is a number
       const price = typeof item.price_snapshot === 'number' 
         ? item.price_snapshot 
         : parseFloat(String(item.price_snapshot)) || 0;
@@ -158,18 +158,18 @@ export default function CartPage() {
     }, 0);
   };
 
-  // Obtener el nombre del producto
+  // Get product name
   const getProductName = (productId: number) => {
-    // Si tenemos los datos del producto, usar el nombre real
+    // If we have product data, use the actual name
     if (productsData[productId]?.name) {
       return productsData[productId].name;
     }
     
-    // Si no tenemos los datos, usar un nombre genérico dependiente del ID
-    return `Producto ${productId}`;
+    // If we don't have data, use a generic name dependent on the ID
+    return `Product ${productId}`;
   };
 
-  // Agrupar opciones por tipo de parte
+  // Group options by part type
   const getGroupedOptions = (item: CartItem) => {
     const grouped: Record<string, {name: string, price: number}[]> = {};
 
@@ -189,16 +189,16 @@ export default function CartPage() {
     return grouped;
   };
 
-  // Calcular el precio base del producto
+  // Calculate the product base price
   const getBasePrice = (productId: number): number => {
-    // Si tenemos el dato en productsData y es un número válido, usarlo
+    // If we have the data in productsData and it's a valid number, use it
     if (productsData[productId]) {
       return convertToValidPrice(productsData[productId].basePrice, 599);
     }
     
-    // Si no tenemos el dato, retornar un valor razonable por defecto
-    console.warn(`No se encontró un precio base válido para el producto ${productId}, usando precio por defecto (599)`);
-    return 599; // Precio base por defecto razonable
+    // If we don't have the data, return a reasonable default value
+    console.warn(`No valid base price found for product ${productId}, using default price (599)`);
+    return 599; // Reasonable default base price
   };
 
   if (loading && !cart) {
@@ -217,7 +217,7 @@ export default function CartPage() {
           onClick={fetchCart}
           className="btn btn-primary"
         >
-          Intentar de nuevo
+          Try again
         </button>
       </div>
     );
@@ -226,13 +226,13 @@ export default function CartPage() {
   if (!cart || cart.items.length === 0) {
     return (
       <div className="text-center py-12">
-        <h1 className="text-3xl font-bold mb-4">Tu carrito está vacío</h1>
+        <h1 className="text-3xl font-bold mb-4">Your cart is empty</h1>
         <p className="text-gray-600 mb-8">
-          Añade algunos productos a tu carrito para continuar con la compra.
+          Add some products to your cart to continue shopping.
         </p>
         
         <Link href="/products" className="btn btn-primary">
-          Ir a Tienda
+          Go to Store
         </Link>
       </div>
     );
@@ -240,13 +240,13 @@ export default function CartPage() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-8" style={{ color: styles.secondary, borderBottom: `1px solid ${styles.lightGray}`, paddingBottom: '1rem' }}>Tu carrito</h1>
+      <h1 className="text-3xl font-bold mb-8" style={{ color: styles.secondary, borderBottom: `1px solid ${styles.lightGray}`, paddingBottom: '1rem' }}>Your cart</h1>
       
       {loading && (
         <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50 backdrop-blur-sm">
           <div className="bg-white p-6 rounded-xl shadow-xl flex items-center space-x-4" style={{ boxShadow: styles.boxShadow }}>
             <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2" style={{ borderColor: styles.primary }}></div>
-            <p className="text-gray-700 font-medium">Actualizando carrito...</p>
+            <p className="text-gray-700 font-medium">Updating cart...</p>
           </div>
         </div>
       )}
@@ -258,7 +258,7 @@ export default function CartPage() {
             const groupedOptions = getGroupedOptions(item);
             const basePrice = getBasePrice(item.product_id);
             
-            // Calcular el precio total de las opciones sumando el precio de cada opción
+            // Calculate the total price of options by summing the price of each option
             let calculatedOptionsPrice = 0;
             item.options.forEach(option => {
               const optionData = optionsData[option.part_option_id];
@@ -267,7 +267,7 @@ export default function CartPage() {
               }
             });
             
-            // Usar el precio calculado si es mayor que 0, o usar la diferencia con el price_snapshot
+            // Use the calculated price if it's greater than 0, or use the difference with price_snapshot
             const optionsPrice = calculatedOptionsPrice > 0 
               ? calculatedOptionsPrice 
               : (typeof item.price_snapshot === 'number' 
@@ -285,9 +285,9 @@ export default function CartPage() {
                 }}
               >
                 <div className="p-5 space-y-4">
-                  {/* Primera fila: imagen, nombre y precio */}
+                  {/* First row: image, name, and price */}
                   <div className="flex items-start">
-                    {/* Imagen del producto */}
+                    {/* Product image */}
                     <div className="relative h-20 w-20 mr-4 overflow-hidden rounded-md flex-shrink-0">
                       <Image
                         src={productsData[item.product_id]?.image || 'https://images.unsplash.com/photo-1576435728678-68d0fbf94e91?q=80&w=1200'}
@@ -300,7 +300,7 @@ export default function CartPage() {
                       />
                     </div>
                     
-                    {/* Información del producto */}
+                    {/* Product information */}
                     <div className="flex-grow">
                       <div className="flex justify-between items-start">
                         <div>
@@ -318,10 +318,10 @@ export default function CartPage() {
                     </div>
                   </div>
                   
-                  {/* Segunda fila: detalles de precio y opciones */}
+                  {/* Second row: price and options details */}
                   <div className="p-4 rounded-lg shadow-inner" style={{ backgroundColor: styles.lightGray }}>
                     <div className="flex justify-between text-sm font-medium mb-3 pb-2" style={{ borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
-                      <span className="text-gray-600">Precio base:</span>
+                      <span className="text-gray-600">Base price:</span>
                       <span className="text-gray-800 font-semibold">€{formatPrice(basePrice)}</span>
                     </div>
                     
@@ -344,17 +344,17 @@ export default function CartPage() {
                         
                         {optionsPrice > 0 && (
                           <div className="flex justify-between text-sm font-semibold mt-2 pt-2" style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
-                            <span className="text-gray-700">Extra por opciones:</span>
+                            <span className="text-gray-700">Extra by options:</span>
                             <span style={{ color: styles.primary }}>€{formatPrice(optionsPrice)}</span>
                           </div>
                         )}
                       </div>
                     ) : (
-                      <p className="text-gray-500 text-sm italic py-1">Sin personalizaciones adicionales</p>
+                      <p className="text-gray-500 text-sm italic py-1">No additional personalizations</p>
                     )}
                   </div>
                   
-                  {/* Tercera fila: controles de cantidad y botón eliminar */}
+                  {/* Third row: quantity controls and remove button */}
                   <div className="flex justify-end items-center pt-2">
                     
                     <button 
@@ -364,10 +364,10 @@ export default function CartPage() {
                         color: '#ff3b30', 
                         transition: styles.buttonTransition 
                       }}
-                      aria-label="Eliminar producto"
+                      aria-label="Remove product"
                     >
                       <TrashIcon className="h-5 w-5 mr-1" />
-                      <span className="text-sm font-medium">Eliminar</span>
+                      <span className="text-sm font-medium">Remove</span>
                     </button>
                   </div>
                 </div>
@@ -384,7 +384,7 @@ export default function CartPage() {
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
-              Continuar comprando
+              Continue shopping
             </Link>
           </div>
         </div>
@@ -394,7 +394,7 @@ export default function CartPage() {
             style={{ boxShadow: styles.boxShadow }}>
             <h2 className="text-xl font-bold mb-6 pb-3" 
               style={{ color: styles.secondary, borderBottom: '1px solid #eee' }}>
-              Resumen del pedido
+              Order summary
             </h2>
             
             <div className="space-y-4 mb-6">
@@ -404,13 +404,13 @@ export default function CartPage() {
               </div>
               
               <div className="flex justify-between">
-                <span className="text-gray-600">Envío</span>
-                <span className="text-gray-500 italic">Calculado en el siguiente paso</span>
+                <span className="text-gray-600">Shipping</span>
+                <span className="text-gray-500 italic">Calculated in the next step</span>
               </div>
               
               <div className="flex justify-between pt-3 text-sm text-gray-500">
-                <span>Impuestos</span>
-                <span>Incluidos</span>
+                <span>Taxes</span>
+                <span>Included</span>
               </div>
             </div>
             
@@ -419,7 +419,7 @@ export default function CartPage() {
                 <span style={{ color: styles.secondary }}>Total</span>
                 <span style={{ color: styles.primary }}>€{formatPrice(calculateTotal())}</span>
               </div>
-              <p className="text-xs text-gray-500 mt-1 text-right">Impuestos incluidos</p>
+              <p className="text-xs text-gray-500 mt-1 text-right">Taxes included</p>
             </div>
             
             <button
@@ -433,7 +433,7 @@ export default function CartPage() {
               onMouseOver={(e) => e.currentTarget.style.backgroundColor = styles.primaryDark}
               onMouseOut={(e) => e.currentTarget.style.backgroundColor = styles.primary}
             >
-              <span>Proceder al pago</span>
+              <span>Proceed to checkout</span>
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
               </svg>
@@ -444,7 +444,7 @@ export default function CartPage() {
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                 </svg>
-                <p className="text-xs text-gray-500">Pago 100% seguro. Tus datos están protegidos.</p>
+                <p className="text-xs text-gray-500">100% secure payment. Your data is protected.</p>
               </div>
             </div>
           </div>
