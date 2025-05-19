@@ -64,20 +64,21 @@ export const ProductOption: React.FC<ProductOptionProps> = ({
     numericApplicablePrice !== numericBasePrice && 
     price_condition_met === true;
     
-  // Determinar si es un descuento o un incremento
-  const isDiscount = hasPriceCondition && numericApplicablePrice! < numericBasePrice;
-  const isPriceIncrease = hasPriceCondition && numericApplicablePrice! > numericBasePrice;
-  
-  // Calcular el porcentaje de cambio
-  const priceChangePercentage = hasPriceCondition 
-    ? Math.abs(Math.round(((numericBasePrice - numericApplicablePrice!) / numericBasePrice) * 100))
-    : 0;
-  
-  // Calcular la diferencia de precio
-  const priceDifference = hasPriceCondition
-    ? Math.abs(numericBasePrice - numericApplicablePrice!)
-    : 0;
+    // Una forma más directa de verificar: si el nuevo precio es menor, es un descuento.
+    // Si es mayor, es un incremento.
+    const isDiscount = numericApplicablePrice !== undefined && numericApplicablePrice < numericBasePrice;
+    const isPriceIncrease = numericApplicablePrice !== undefined && numericApplicablePrice > numericBasePrice;
     
+    // Calcular la diferencia absoluta (para mostrar)
+    const priceDifference = numericApplicablePrice !== undefined 
+      ? Math.abs(numericBasePrice - numericApplicablePrice)
+      : 0;
+  
+  console.log('priceDifference', priceDifference)
+  console.log('isDiscount', isDiscount)
+  console.log('isPriceIncrease', isPriceIncrease)
+
+  
   // Generar mensaje de tooltip para precios condicionales disponibles
   const conditionalPriceTooltip = conditional_prices && conditional_prices.length > 0 
     ? `Combina con: ${conditional_prices.map(cp => {
@@ -87,17 +88,6 @@ export const ProductOption: React.FC<ProductOptionProps> = ({
         return `${cp.condition_option_name} (${formatPrice(numericConditionalPrice)})`;
       }).join(', ')}` 
     : '';
-  
-  console.log(`Opción ${name}:`, {
-    basePrice: numericBasePrice,
-    applicablePrice: numericApplicablePrice,
-    hasPriceCondition,
-    isDiscount,
-    isPriceIncrease,
-    priceConditionMet: price_condition_met,
-    conditionName: condition_option_name,
-    conditionalPricesCount: conditional_prices?.length || 0
-  });
   
   return (
     <Card 

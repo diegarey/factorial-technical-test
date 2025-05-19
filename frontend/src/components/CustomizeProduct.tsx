@@ -662,23 +662,34 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
                               {option.name}
                             </span>
                             <div className="flex flex-col items-end">
-                              {showDiscount ? (
-                                <>
-                                  <span className="text-sm line-through text-gray-400">
-                                    +€{originalPrice.toFixed(2)}
-                                  </span>
-                                  <span className="font-bold text-green-600">
+                              {/* Corregir la variable no definida */}
+                              <div className="flex flex-col items-end">
+                                {hasConditionalPrice ? (
+                                  <>
+                                    <div className="flex items-center">
+                                      <span className="line-through text-gray-400 mr-2">
+                                        +€{originalPrice.toFixed(2)}
+                                      </span>
+                                      <span className={`font-bold ${displayPrice < originalPrice ? 'text-green-600' : 'text-amber-600'}`}>
+                                        +€{displayPrice.toFixed(2)}
+                                      </span>
+                                    </div>
+                                    {displayPrice < originalPrice ? (
+                                      <div className="text-xs text-green-600 mt-1">
+                                        ¡Ahorro de €{(originalPrice - displayPrice).toFixed(2)}!
+                                      </div>
+                                    ) : (
+                                      <div className="text-xs text-amber-600 mt-1">
+                                        Precio especial
+                                      </div>
+                                    )}
+                                  </>
+                                ) : (
+                                  <span className="font-bold text-primary">
                                     +€{displayPrice.toFixed(2)}
                                   </span>
-                                  <span className="text-xs text-green-600 mt-1">
-                                    ¡Precio especial!
-                                  </span>
-                                </>
-                              ) : (
-                                <span className="font-bold text-primary">
-                                  +€{displayPrice.toFixed(2)}
-                                </span>
-                              )}
+                                )}
+                              </div>
                             </div>
                           </div>
                           
@@ -821,13 +832,19 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
                                   <span className="line-through text-gray-400 mr-2">
                                     +€{originalPrice.toFixed(2)}
                                   </span>
-                                  <span className="font-bold text-green-600">
+                                  <span className={`font-bold ${displayPrice < originalPrice ? 'text-green-600' : 'text-amber-600'}`}>
                                     +€{displayPrice.toFixed(2)}
                                   </span>
                                 </div>
-                                <div className="text-xs text-green-600 mt-1">
-                                  ¡Ahorro de €{(originalPrice - displayPrice).toFixed(2)}!
-                                </div>
+                                {displayPrice < originalPrice ? (
+                                  <div className="text-xs text-green-600 mt-1">
+                                    ¡Ahorro de €{(originalPrice - displayPrice).toFixed(2)}!
+                                  </div>
+                                ) : (
+                                  <div className="text-xs text-amber-600 mt-1">
+                                    Precio especial
+                                  </div>
+                                )}
                               </>
                             ) : (
                               <span className="font-bold text-primary">
@@ -859,38 +876,6 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
                   <span className="font-medium text-gray-700">Precio base</span>
                   <span className="font-bold">€{formatPrice(product.basePrice)}</span>
                 </div>
-                
-                {Object.keys(conditionalPrices).length > 0 && (
-                  <div className="border-t border-gray-200 pt-2 mt-2">
-                    <div className="text-sm font-medium text-green-700 mb-2">Descuentos aplicados:</div>
-                    {Object.entries(conditionalPrices).map(([optionId, prices]) => {
-                      const partType = partTypesToRender.find(pt => 
-                        pt.options.some(opt => opt.id === parseInt(optionId))
-                      );
-                      const option = partType?.options.find(opt => opt.id === parseInt(optionId));
-                      const discount = prices.originalPrice - prices.conditionalPrice;
-                      
-                      if (!option) return null;
-
-                      return (
-                        <div key={optionId} className="flex justify-between text-sm py-1">
-                          <span className="text-gray-600">{option.name}</span>
-                          <span className="text-green-600 font-medium">-€{discount.toFixed(2)}</span>
-                        </div>
-                      );
-                    })}
-                    <div className="border-t border-gray-200 mt-2 pt-2">
-                      <div className="flex justify-between text-sm font-medium">
-                        <span className="text-gray-700">Ahorro total</span>
-                        <span className="text-green-600">
-                          -€{Object.values(conditionalPrices).reduce((total, price) => 
-                            total + (price.originalPrice - price.conditionalPrice), 0
-                          ).toFixed(2)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
               
               {/* Subtotal */}
