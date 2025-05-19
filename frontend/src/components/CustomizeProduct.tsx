@@ -497,16 +497,35 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
         return;
       }
       
-      // 3. Use CartApi to add to cart
+      // 3. Calculate final price to add metadata about conditional prices
+      const priceResponse = await ProductsApi.calculatePrice(selectedOptionIds);
+      console.log("Price calculation response:", priceResponse);
+      
+      // Create metadata about conditional prices if they exist
+      const conditionalPricesMetadata = {};
+      if (priceResponse.conditional_prices) {
+        console.log("Adding conditional prices metadata to cart item");
+        Object.entries(conditionalPrices).forEach(([optionId, priceInfo]) => {
+          conditionalPricesMetadata[optionId] = {
+            originalPrice: priceInfo.originalPrice,
+            conditionalPrice: priceInfo.conditionalPrice
+          };
+        });
+      }
+      
+      // 4. Use CartApi to add to cart with metadata
       const result = await CartApi.addToCart({
         product_id: productId,
         selected_options: selectedOptionIds,
-        quantity: 1
+        quantity: 1,
+        metadata: {
+          conditional_prices: conditionalPricesMetadata
+        }
       });
       
       console.log("Product added to cart:", result);
       
-      // 4. Show message and redirect
+      // 5. Show message and redirect
       alert('¡Producto añadido al carrito!');
       router.push('/cart');
       

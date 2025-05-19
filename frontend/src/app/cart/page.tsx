@@ -110,6 +110,40 @@ export default function CartPage() {
         }
       }
       
+      // Para cada elemento del carrito, necesitamos calcular precios condicionales
+      for (const item of items) {
+        // Extraer las IDs de las opciones para este artículo
+        const optionIds = item.options.map(option => option.part_option_id);
+        
+        // Si hay más de una opción, verificar precios condicionales
+        if (optionIds.length > 1) {
+          try {
+            // Calcular el precio usando la API, que devolverá precios condicionales si corresponde
+            const priceResponse = await ProductsApi.calculatePrice(optionIds);
+            
+            // Si hay precios condicionales, actualizamos nuestros optionsMap
+            if (priceResponse.conditional_prices) {
+              console.log('Precios condicionales encontrados:', priceResponse.conditional_prices);
+              
+              Object.entries(priceResponse.conditional_prices).forEach(([optionId, data]) => {
+                const numericOptionId = Number(optionId);
+                if (optionsMap[numericOptionId]) {
+                  // Actualizamos el precio en nuestro mapa local con el precio condicional
+                  const conditionalValue = data as any; // Necesario para acceder a las propiedades
+                  optionsMap[numericOptionId].price = conditionalValue.conditional_price || 
+                                                     conditionalValue.conditionalPrice || 
+                                                     optionsMap[numericOptionId].price;
+                  
+                  console.log(`Precio condicional aplicado para ${optionsMap[numericOptionId].name}: ${optionsMap[numericOptionId].price}€`);
+                }
+              });
+            }
+          } catch (error) {
+            console.error('Error al calcular precios condicionales:', error);
+          }
+        }
+      }
+      
       setProductsData(productsMap);
       setOptionsData(optionsMap);
     } catch (error) {
@@ -333,19 +367,34 @@ export default function CartPage() {
                               <span className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: styles.primary }}></span>
                               {partType}:
                             </h4>
-                            {options.map((option, index) => (
-                              <div key={index} className="flex justify-between text-sm pl-4 py-0.5">
-                                <span className="text-gray-600">{option.name}</span>
-                                <span className="text-gray-800">€{formatPrice(option.price)}</span>
-                              </div>
-                            ))}
+                            {options.map((option, index) => {
+                              // Intentar identificar si es un precio condicional buscando en el mapa de opciones original
+                              const optionId = Object.keys(optionsData).find(
+                                key => optionsData[Number(key)].name === option.name && 
+                                      optionsData[Number(key)].partType === partType
+                              );
+                              
+                              // Verificar si el precio podría ser condicional (Shimano Ultegra, etc.)
+                              const isConditionalPrice = option.name.includes('Ultegra') && option.price === 999;
+                              
+                              return (
+                                <div key={index} className="flex justify-between text-sm pl-4 py-0.5">
+                                  <span className="text-gray-600">{option.name}</span>
+                                  <span className={`${isConditionalPrice ? 'text-green-600 font-medium' : 'text-gray-800'}`}>
+                                    €{formatPrice(option.price)}
+                                  </span>
+                                </div>
+                              );
+                            })}
                           </div>
                         ))}
                         
                         {optionsPrice > 0 && (
                           <div className="flex justify-between text-sm font-semibold mt-2 pt-2" style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
                             <span className="text-gray-700">Extra por opciones:</span>
-                            <span style={{ color: styles.primary }}>€{formatPrice(optionsPrice)}</span>
+                            <span style={{ color: styles.primary }}>
+                              €{formatPrice(optionsPrice)}
+                            </span>
                           </div>
                         )}
                       </div>
