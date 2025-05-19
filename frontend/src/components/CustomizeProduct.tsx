@@ -502,7 +502,7 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
       console.log("Price calculation response:", priceResponse);
       
       // Create metadata about conditional prices if they exist
-      const conditionalPricesMetadata = {};
+      const conditionalPricesMetadata: Record<string, any> = {};
       if (priceResponse.conditional_prices) {
         console.log("Adding conditional prices metadata to cart item");
         Object.entries(conditionalPrices).forEach(([optionId, priceInfo]) => {

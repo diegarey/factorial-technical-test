@@ -82,4 +82,7 @@ export interface AddToCartRequest {
   product_id: number;
   selected_options: number[];
   quantity: number;
+  metadata?: {
+    conditional_prices?: Record<string, any>;
+  };
 } 
