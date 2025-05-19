@@ -679,7 +679,7 @@ def init_db(db: Session):
     mt_fox_carbon_price = ConditionalPrice(
         option_id=mt_fox_fork.id,
         condition_option_id=mt_carbon_frame.id,
-        conditional_price=Decimal("799.00")  # 100€ de descuento
+        conditional_price=Decimal("1799.00")  # 100€ de descuento
     )
     
     # If you choose Shimano brakes with Shimano drivetrain there's better integration and discount

@@ -1,0 +1,127 @@
+.option-card {
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+  background-color: #f5f7fa;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  border: 2px solid transparent;
+}
+
+.option-card.selected {
+  border-color: #fe3e6d;
+  background-color: rgba(254, 62, 109, 0.05);
+}
+
+.option-card.disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.option-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.selected-indicator {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 24px;
+  height: 24px;
+  background-color: #fe3e6d;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.checkmark {
+  color: white;
+  font-size: 14px;
+}
+
+.option-name {
+  font-weight: 600;
+  font-size: 16px;
+  margin-bottom: 4px;
+}
+
+.option-price {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.original-price {
+  text-decoration: line-through;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.discounted-price {
+  color: #fe3e6d;
+  font-weight: 600;
+}
+
+.discount-badge {
+  background-color: #10b981;
+  color: white;
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.conditional-badge {
+  background-color: #3b82f6;
+  color: white;
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.discount-info {
+  font-size: 13px;
+  color: #10b981;
+  font-style: italic;
+  margin-top: 4px;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+}
+
+.discount-info::before {
+  content: "✓";
+  display: inline-block;
+  margin-right: 4px;
+  font-weight: bold;
+}
+
+.compatibility-warning {
+  margin-top: 6px;
+  font-size: 13px;
+}
+
+.stock-warning {
+  color: #ef4444;
+  font-weight: 500;
+}
+
+.dependency-warning {
+  color: #f59e0b;
+  font-weight: 500;
+}
+
+.general-warning {
+  color: #6b7280;
+  font-weight: 500;
+}
+
+/* Estilos para efectos hover */
+.option-card:not(.disabled):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+} 

@@ -1,0 +1,121 @@
+.price-summary-container {
+  background-color: #ffffff;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  margin-bottom: 24px;
+}
+
+.price-summary-container h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-top: 0;
+  margin-bottom: 16px;
+  color: #1f2937;
+}
+
+.price-summary-line {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.price-label {
+  font-size: 15px;
+  color: #4b5563;
+}
+
+.price-value {
+  font-size: 15px;
+  font-weight: 500;
+  color: #1f2937;
+}
+
+.price-summary-line.discount {
+  color: #10b981;
+}
+
+.price-value.savings {
+  color: #10b981;
+  font-weight: 600;
+}
+
+.price-summary-divider {
+  height: 1px;
+  background-color: #e5e7eb;
+  margin: 16px 0;
+}
+
+.price-summary-total {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 16px;
+  margin-bottom: 8px;
+}
+
+.price-summary-total .price-label {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.price-value.total {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fe3e6d;
+}
+
+.conditional-prices-detail {
+  margin-top: 20px;
+  border-top: 1px dashed #e5e7eb;
+  padding-top: 16px;
+}
+
+.conditional-prices-detail h4 {
+  font-size: 15px;
+  font-weight: 600;
+  margin-top: 0;
+  margin-bottom: 12px;
+  color: #1f2937;
+}
+
+.conditional-price-item {
+  background-color: #f9fafb;
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 10px;
+}
+
+.conditional-price-item .option-name {
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+
+.price-detail {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.price-detail .original-price {
+  text-decoration: line-through;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.price-detail .arrow {
+  color: #9ca3af;
+}
+
+.price-detail .discounted-price {
+  color: #10b981;
+  font-weight: 600;
+}
+
+.condition-detail {
+  font-size: 13px;
+  color: #6b7280;
+  font-style: italic;
+} 
