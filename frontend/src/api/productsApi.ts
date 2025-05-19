@@ -1,6 +1,7 @@
 import apiClient from './client';
 import { Product, AvailablePartType, PartType, PartOption } from '../types/product';
 import { getApiUrl } from '../config/api';
+import { convertToValidPrice, transformApiData, transformDataForApi } from '../utils/dataUtils';
 
 // Transformation function to adapt backend data to frontend format
 const transformProductData = (data: any): Product => {
@@ -18,66 +19,30 @@ const transformProductData = (data: any): Product => {
     };
   }
   
-  console.log('Transformando datos:', data);
-  console.log('base_price antes de transformar:', data.base_price, typeof data.base_price);
-  console.log('part_types antes de transformar:', data.part_types);
-  
   // Verify that part_types exists and is an array
   const partTypes = Array.isArray(data.part_types) ? data.part_types : [];
   
-  // Process the base price directly from the backend
-  // The backend returns the base price as string when it's a Decimal
-  let basePrice = 0;
+  // Transformar datos básicos del producto usando nuestra función de utilidad
+  const transformed = transformApiData(data);
   
-  // Try different sources for base price
-  if (data.base_price !== undefined && data.base_price !== null) {
-    // Convert to number if it's a string
-    if (typeof data.base_price === 'string') {
-      basePrice = parseFloat(data.base_price);
-    } else if (typeof data.base_price === 'number') {
-      basePrice = data.base_price;
-    }
-  } else if (data.basePrice !== undefined && data.basePrice !== null) {
-    // Also try with basePrice in case it's already transformed
-    if (typeof data.basePrice === 'string') {
-      basePrice = parseFloat(data.basePrice);
-    } else if (typeof data.basePrice === 'number') {
-      basePrice = data.basePrice;
-    }
-  }
+  // Asignar valores por defecto para campos que podrían faltar
+  transformed.basePrice = convertToValidPrice(data.base_price || data.basePrice, 0);
+  transformed.image = data.image_url || data.image || 'https://images.unsplash.com/photo-1576435728678-68d0fbf94e91?q=80&w=1200';
   
-  // Validate that the base price is a valid positive number
-  if (isNaN(basePrice) || basePrice < 0) {
-    console.error(`Precio base inválido recibido del backend para el producto ID=${data.id || 'desconocido'}: ${data.base_price}`);
-    console.error('Se requiere un precio base válido desde el backend');
-    basePrice = 0; // Assign 0 as default value in case of error
-  }
+  // Transformar tipos de partes y opciones
+  transformed.partTypes = partTypes.map((pt: any) => ({
+    id: pt.id,
+    name: pt.name,
+    product_id: pt.product_id,
+    options: Array.isArray(pt.options) ? pt.options.map((opt: any) => ({
+      id: opt.id,
+      name: opt.name,
+      base_price: convertToValidPrice(opt.base_price, 0),
+      part_type_id: opt.part_type_id,
+      in_stock: opt.in_stock
+    })) : []
+  }));
   
-  const transformed = {
-    id: data.id,
-    name: data.name,
-    category: data.category,
-    description: data.description,
-    basePrice,
-    image: data.image_url || 'https://images.unsplash.com/photo-1576435728678-68d0fbf94e91?q=80&w=1200',
-    is_active: data.is_active,
-    featured: data.featured,
-    partTypes: partTypes.map((pt: any) => ({
-      id: pt.id,
-      name: pt.name,
-      product_id: pt.product_id,
-      options: Array.isArray(pt.options) ? pt.options.map((opt: any) => ({
-        id: opt.id,
-        name: opt.name,
-        base_price: typeof opt.base_price === 'string' ? parseFloat(opt.base_price) : opt.base_price,
-        part_type_id: opt.part_type_id,
-        in_stock: opt.in_stock
-      })) : []
-    }))
-  };
-  
-  console.log('basePrice después de transformar:', transformed.basePrice, typeof transformed.basePrice);
-  console.log('partTypes después de transformar:', transformed.partTypes);
   return transformed;
 };
 
@@ -282,30 +247,13 @@ export const ProductsApi = {
         selected_options: selectedOptions
       };
       
-      console.log('Enviando datos para cálculo de precio:', requestBody);
-      
       const response = await apiClient.post(getApiUrl('products/calculate-price'), requestBody);
-      console.log('Respuesta de cálculo de precio:', response.data);
       
       // Get the price from the response object and ensure it's a valid number
       const total_price = response.data.total_price;
       
-      // Validate and convert the price
-      if (total_price === undefined || total_price === null) {
-        console.error('La API no devolvió un valor de precio válido');
-        return 0;
-      }
-      
-      // Convert to number if it's a string
-      const numericPrice = typeof total_price === 'string' ? parseFloat(total_price) : total_price;
-      
-      // Verify that it's a valid number
-      if (isNaN(numericPrice)) {
-        console.error('La API devolvió un precio que no se puede convertir a número:', total_price);
-        return 0;
-      }
-      
-      return numericPrice;
+      // Usar nuestra función de utilidad para convertir y validar el precio
+      return convertToValidPrice(total_price, 0);
     } catch (error) {
       console.error('Error al calcular precio:', error);
       // If it fails, return 0 to avoid breaking the UI
@@ -320,20 +268,8 @@ export const ProductsApi = {
     try {
       console.log('Creando nuevo producto:', productData);
       
-      // Make sure the base price is in the correct format
-      const dataToSend: any = { ...productData };
-      
-      // If basePrice exists in productData, convert it to base_price for the backend
-      if (dataToSend.basePrice !== undefined) {
-        dataToSend.base_price = dataToSend.basePrice;
-        delete dataToSend.basePrice; // Remove the frontend property to avoid duplication
-      }
-      
-      // If image exists in productData, convert it to image_url for the backend
-      if (dataToSend.image !== undefined) {
-        dataToSend.image_url = dataToSend.image;
-        delete dataToSend.image; // Remove the frontend property to avoid duplication
-      }
+      // Usar función de utilidad para transformar datos para la API
+      const dataToSend = transformDataForApi(productData);
       
       console.log('Datos formateados para enviar al backend:', dataToSend);
       
@@ -355,49 +291,10 @@ export const ProductsApi = {
       console.log('Código de estado de respuesta:', response.status);
       console.log('Headers de respuesta:', Object.fromEntries(response.headers));
       
-      // If the response is not successful, try to get the error text
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Error en respuesta:', response.status, errorText);
-        throw new Error(`Error ${response.status}: ${errorText}`);
-      }
-      
-      // Check the content type of the response
-      const contentType = response.headers.get('content-type');
-      console.log('Tipo de contenido de respuesta:', contentType);
-      
-      // If the response is empty or not JSON, handle it specially
-      if (!contentType || !contentType.includes('application/json')) {
-        console.warn('La respuesta no es JSON, posiblemente está vacía o mal formateada');
-        
-        // If the response is successful but there is no JSON data, create a minimal product
-        if (response.status >= 200 && response.status < 300) {
-          console.log('Respuesta exitosa pero sin datos JSON. Creando producto mínimo...');
-          
-          // Create a minimal product based on the sent data
-          const minimalProduct: Product = {
-            id: Math.floor(Math.random() * 10000), // Temporary ID until reload
-            name: dataToSend.name || 'Nuevo producto',
-            category: dataToSend.category || 'general',
-            basePrice: dataToSend.base_price || 0,
-            image: dataToSend.image_url || 'https://images.unsplash.com/photo-1576435728678-68d0fbf94e91?q=80&w=1200',
-            partTypes: []
-          };
-          
-          console.log('Producto mínimo creado:', minimalProduct);
-          return minimalProduct;
-        }
-        
-        // If the response is not successful and it's not JSON, throw an error
-        const respText = await response.text();
-        throw new Error(`Respuesta no JSON (${response.status}): ${respText}`);
-      }
-      
-      // Try to parse the JSON data
+      // Parse the response
       let data;
       try {
         const responseText = await response.text();
-        console.log('Texto de respuesta completo:', responseText);
         
         // If the text is empty, handle it
         if (!responseText || responseText.trim() === '') {
@@ -412,45 +309,39 @@ export const ProductsApi = {
         throw new Error(`Error al parsear respuesta: ${parseError}`);
       }
       
-      console.log('Respuesta del backend al crear producto:', data);
-      
-      // If the response is null but the code is successful, create a minimal product
+      // Si hay un error en la respuesta pero el código es exitoso, crear producto mínimo
       if (!data && response.status >= 200 && response.status < 300) {
         console.warn('Respuesta del backend es null pero el código es exitoso. Creando producto mínimo...');
         
-        // Create a minimal product based on the sent data
+        // Crear un producto mínimo basado en los datos enviados
         const minimalProduct: Product = {
-          id: Math.floor(Math.random() * 10000), // Temporary ID until reload
-          name: dataToSend.name || 'Nuevo producto',
-          category: dataToSend.category || 'general',
-          basePrice: dataToSend.base_price || 0,
-          image: dataToSend.image_url || 'https://images.unsplash.com/photo-1576435728678-68d0fbf94e91?q=80&w=1200',
+          id: Math.floor(Math.random() * 10000), // ID temporal
+          name: productData.name || 'Nuevo producto',
+          category: productData.category || 'general',
+          basePrice: convertToValidPrice(productData.basePrice, 0),
+          image: productData.image || 'https://images.unsplash.com/photo-1576435728678-68d0fbf94e91?q=80&w=1200',
           partTypes: []
         };
         
-        console.log('Producto mínimo creado:', minimalProduct);
         return minimalProduct;
       }
       
-      // Verify that data contains the expected information
+      // Verificar que la data contiene la información esperada
       if (!data || !data.id) {
         console.error('Respuesta del backend no contiene un ID de producto:', data);
         
-        // If there is some kind of data in the response, try to use it
+        // Si hay algún tipo de dato en la respuesta, intentar usarlo
         if (data) {
-          console.log('Intentando recuperar datos parciales de la respuesta...');
-          
-          // Create a product with available data and a temporary ID
+          // Crear un producto con datos disponibles y un ID temporal
           const partialProduct: Product = {
             id: data.id || Math.floor(Math.random() * 10000),
-            name: data.name || dataToSend.name || 'Nuevo producto',
-            category: data.category || dataToSend.category || 'general',
-            basePrice: data.base_price || dataToSend.base_price || 0,
-            image: data.image_url || dataToSend.image_url || 'https://images.unsplash.com/photo-1576435728678-68d0fbf94e91?q=80&w=1200',
+            name: data.name || productData.name || 'Nuevo producto',
+            category: data.category || productData.category || 'general',
+            basePrice: convertToValidPrice(data.base_price || productData.basePrice, 0),
+            image: data.image_url || productData.image || 'https://images.unsplash.com/photo-1576435728678-68d0fbf94e91?q=80&w=1200',
             partTypes: []
           };
           
-          console.log('Producto parcial creado:', partialProduct);
           return partialProduct;
         }
         

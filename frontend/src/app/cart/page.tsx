@@ -7,6 +7,7 @@ import { CartApi, Cart, CartItem } from '@/api/cartApi';
 import { TrashIcon } from '@heroicons/react/24/outline';
 import { ProductsApi } from '@/api/productsApi';
 import { Product, PartOption, PartType } from '@/types/product';
+import { convertToValidPrice, formatPrice } from '../../utils/dataUtils';
 
 // Estilos personalizados
 const styles = {
@@ -191,14 +192,11 @@ export default function CartPage() {
   // Calcular el precio base del producto
   const getBasePrice = (productId: number): number => {
     // Si tenemos el dato en productsData y es un número válido, usarlo
-    if (productsData[productId] && 
-        typeof productsData[productId].basePrice === 'number' && 
-        !isNaN(productsData[productId].basePrice) && 
-        productsData[productId].basePrice > 0) {
-      return productsData[productId].basePrice;
+    if (productsData[productId]) {
+      return convertToValidPrice(productsData[productId].basePrice, 599);
     }
     
-    // Si no tenemos el dato o es 0, retornar un valor razonable por defecto
+    // Si no tenemos el dato, retornar un valor razonable por defecto
     console.warn(`No se encontró un precio base válido para el producto ${productId}, usando precio por defecto (599)`);
     return 599; // Precio base por defecto razonable
   };
@@ -314,9 +312,7 @@ export default function CartPage() {
                             color: styles.primary, 
                             backgroundColor: `${styles.primary}10` 
                           }}>
-                          €{typeof item.price_snapshot === 'number' 
-                              ? item.price_snapshot.toFixed(2) 
-                              : parseFloat(String(item.price_snapshot)).toFixed(2) || '0.00'}
+                          €{formatPrice(item.price_snapshot)}
                         </span>
                       </div>
                     </div>
@@ -326,7 +322,7 @@ export default function CartPage() {
                   <div className="p-4 rounded-lg shadow-inner" style={{ backgroundColor: styles.lightGray }}>
                     <div className="flex justify-between text-sm font-medium mb-3 pb-2" style={{ borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
                       <span className="text-gray-600">Precio base:</span>
-                      <span className="text-gray-800 font-semibold">€{basePrice.toFixed(2)}</span>
+                      <span className="text-gray-800 font-semibold">€{formatPrice(basePrice)}</span>
                     </div>
                     
                     {Object.entries(groupedOptions).length > 0 ? (
@@ -340,7 +336,7 @@ export default function CartPage() {
                             {options.map((option, index) => (
                               <div key={index} className="flex justify-between text-sm pl-4 py-0.5">
                                 <span className="text-gray-600">{option.name}</span>
-                                <span className="text-gray-800">€{option.price.toFixed(2)}</span>
+                                <span className="text-gray-800">€{formatPrice(option.price)}</span>
                               </div>
                             ))}
                           </div>
@@ -349,7 +345,7 @@ export default function CartPage() {
                         {optionsPrice > 0 && (
                           <div className="flex justify-between text-sm font-semibold mt-2 pt-2" style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
                             <span className="text-gray-700">Extra por opciones:</span>
-                            <span style={{ color: styles.primary }}>€{optionsPrice.toFixed(2)}</span>
+                            <span style={{ color: styles.primary }}>€{formatPrice(optionsPrice)}</span>
                           </div>
                         )}
                       </div>
@@ -404,7 +400,7 @@ export default function CartPage() {
             <div className="space-y-4 mb-6">
               <div className="flex justify-between">
                 <span className="text-gray-600">Subtotal</span>
-                <span className="font-medium text-gray-800">€{calculateTotal().toFixed(2)}</span>
+                <span className="font-medium text-gray-800">€{formatPrice(calculateTotal())}</span>
               </div>
               
               <div className="flex justify-between">
@@ -421,7 +417,7 @@ export default function CartPage() {
             <div className="border-t border-gray-200 pt-4 mb-6">
               <div className="flex justify-between text-lg font-bold">
                 <span style={{ color: styles.secondary }}>Total</span>
-                <span style={{ color: styles.primary }}>€{calculateTotal().toFixed(2)}</span>
+                <span style={{ color: styles.primary }}>€{formatPrice(calculateTotal())}</span>
               </div>
               <p className="text-xs text-gray-500 mt-1 text-right">Impuestos incluidos</p>
             </div>

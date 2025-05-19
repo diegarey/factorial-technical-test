@@ -5,6 +5,7 @@ import { ProductsApi } from '@/api/productsApi';
 import { CartApi } from '@/api/cartApi';
 import Link from 'next/link';
 import Image from 'next/image';
+import { convertToValidPrice, formatPrice } from '../utils/dataUtils';
 
 interface CustomizeProductProps {
   product: Product;
@@ -27,33 +28,8 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
 
   // Efecto para inicializar el precio base correctamente - usar SOLO datos de la API
   useEffect(() => {
-    // Intentar diferentes fuentes para el precio base
-    let basePrice = 0;
-    
-    // 1. Intentar directamente base_price (propiedad original API)
-    const rawProduct = product as any;
-    if (rawProduct && rawProduct.base_price !== undefined && rawProduct.base_price !== null) {
-      if (typeof rawProduct.base_price === 'string') {
-        basePrice = parseFloat(rawProduct.base_price);
-      } else if (typeof rawProduct.base_price === 'number') {
-        basePrice = rawProduct.base_price;
-      }
-    }
-    
-    // 2. Si no hay base_price, intentar usar basePrice (propiedad transformada)
-    if (basePrice <= 0 && product.basePrice !== undefined && product.basePrice !== null) {
-      if (typeof product.basePrice === 'string') {
-        basePrice = parseFloat(product.basePrice);
-      } else if (typeof product.basePrice === 'number') {
-        basePrice = product.basePrice;
-      }
-    }
-    
-    // Validar que el precio sea un número positivo
-    if (isNaN(basePrice) || basePrice < 0) {
-      console.error('No se pudo obtener un precio base válido');
-      basePrice = 0;
-    }
+    // Obtener el precio base usando la función de utilidad
+    const basePrice = convertToValidPrice(product.basePrice, 0);
     
     // Actualizar el precio total
     if (basePrice > 0) {
@@ -422,9 +398,7 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
                 <ul className="list-disc pl-5 text-gray-600 space-y-2">
                   <li>Categoría: <span className="font-medium">{product.category}</span></li>
                   <li>Precio: <span className="font-medium text-primary text-lg">
-                    €{(typeof product.basePrice === 'number' && !isNaN(product.basePrice)) 
-                      ? product.basePrice.toFixed(2) 
-                      : (parseFloat(String(product.basePrice)) || 0).toFixed(2)}
+                    €{formatPrice(product.basePrice)}
                   </span></li>
                   {product.description && <li>Descripción completa: <span className="font-medium">{product.description}</span></li>}
                 </ul>
@@ -637,9 +611,7 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
                 <div className="flex justify-between mb-2">
                   <span className="font-medium text-gray-700">Precio base</span>
                   <span className="font-bold">
-                    €{typeof product.basePrice === 'number' && !isNaN(product.basePrice) 
-                      ? product.basePrice.toFixed(2) 
-                      : (parseFloat(String(product.basePrice)) || 0).toFixed(2)}
+                    €{formatPrice(product.basePrice)}
                   </span>
                 </div>
               </div>
