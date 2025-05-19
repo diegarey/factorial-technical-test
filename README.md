@@ -337,6 +337,34 @@ docker compose exec backend pytest
 
 ---
 
+## 🗃️ Database Initialization
+
+The project includes a data initialization system that loads sample products and options into the database. This process is implemented in the file `backend/app/db/init_db.py`.
+
+### Key Features:
+
+- **Initial Cleanup**: Removes all existing data to ensure a clean initialization
+- **Predefined Products**: Loads various types of products (bicycles, skis, surfboards, skates, etc.)
+- **Hierarchical Structure**: Defines customizable parts (frames, wheels, brakes, etc.) for each product
+- **Customization Options**: For each part, creates multiple options with their base prices
+- **Compatibility Rules**: Establishes relationships between options (requires/excludes)
+- **Conditional Pricing**: Defines special prices when certain options are combined
+
+### Examples of Initialized Products:
+
+- **Bicycles**: Mountain Bike, Road Bike, Urban, Hybrid, Electric, BMX, etc.
+- **Sports Products**: Skis, Surfboards, Skates, Snowboard, etc.
+
+The database is initialized automatically when the container starts for the first time or can be reinitialized through admin endpoints.
+
+To manually run the initialization:
+
+```bash
+docker compose exec backend python -c "from app.db.database import get_db; from app.db.init_db import init_db; init_db(next(get_db()))"
+```
+
+---
+
 ## 🔮 Future Improvements
 
 - User authentication and role-based access control
