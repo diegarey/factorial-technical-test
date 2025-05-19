@@ -5,34 +5,34 @@ from decimal import Decimal
 
 def init_db(db: Session):
     """
-    Initializes the database with sample data.
-    First deletes all existing data and then creates new ones.
+    Inicializa la base de datos con algunos datos de ejemplo.
+    Primero borra todos los datos existentes y luego crea nuevos.
     """
-    # Delete all existing data in correct order to respect foreign keys
+    # Borrar todos los datos existentes en orden correcto para respetar claves foráneas
     try:
-        # First delete CartItemOption
+        # Primero eliminar CartItemOption
         db.query(CartItemOption).delete()
-        # Then delete CartItem
+        # Luego eliminar CartItem
         db.query(CartItem).delete()
-        # Then delete Cart
+        # Luego eliminar Cart
         db.query(Cart).delete()
-        # Delete relationships between options
+        # Eliminar relaciones entre opciones
         db.query(ConditionalPrice).delete()
         db.query(OptionDependency).delete()
-        # Delete options and types
+        # Eliminar opciones y tipos
         db.query(PartOption).delete()
         db.query(PartType).delete()
-        # Finally delete products
+        # Finalmente eliminar productos
         db.query(Product).delete()
         
         db.commit()
-        print("Database completely cleaned")
+        print("Base de datos limpiada completamente")
     except Exception as e:
         db.rollback()
-        print(f"Error cleaning database: {e}")
-        # Continue with creation of new data
+        print(f"Error al limpiar la base de datos: {e}")
+        # Continuar con la creación de datos nuevos
     
-    # Create bicycle products
+    # Crear productos de bicicletas
     # 1. Mountain Bike
     mountain_bike = Product(
         name="Mountain Bike Premium",
@@ -133,11 +133,11 @@ def init_db(db: Session):
         image_url="https://images.unsplash.com/photo-1532298229144-0ec0c57515c7?q=80&w=1200"
     )
     
-    # --------------------------------------------------------------------------
-    # ADDITIONAL SPORTS PRODUCTS (BUSINESS EXPANSION)
-    # --------------------------------------------------------------------------
+    #--------------------------------------------------------------------------
+    # PRODUCTOS DEPORTIVOS ADICIONALES (EXPANSIÓN DE NEGOCIO)
+    #--------------------------------------------------------------------------
     
-    # 11. Alpine skis
+    # 11. Esquís alpinos
     alpine_ski = Product(
         name="Esquís Alpinos Freestyle",
         category="ski",
@@ -147,7 +147,7 @@ def init_db(db: Session):
         image_url="https://images.unsplash.com/photo-1565992441121-4367c2967103?q=80&w=1200"
     )
     
-    # 12. Cross country skis
+    # 12. Esquís de fondo
     cross_country_ski = Product(
         name="Esquís de Fondo Racing",
         category="ski",
@@ -157,7 +157,7 @@ def init_db(db: Session):
         image_url="https://images.unsplash.com/photo-1551698618-1dfe5d97d256?q=80&w=1200"
     )
     
-    # 13. Surfboard
+    # 13. Tabla de surf
     surfboard = Product(
         name="Tabla de Surf Performance",
         category="surf",
@@ -167,7 +167,7 @@ def init_db(db: Session):
         image_url="https://images.unsplash.com/photo-1531722569936-825d3dd91b15?q=80&w=1200"
     )
     
-    # 14. Bodyboard
+    # 14. Tabla de bodyboard
     bodyboard = Product(
         name="Bodyboard Pro",
         category="surf",
@@ -177,7 +177,7 @@ def init_db(db: Session):
         image_url="https://images.unsplash.com/photo-1502680390469-be75c86b636f?q=80&w=1200"
     )
     
-    # 15. Inline skates
+    # 15. Patines en línea
     inline_skates = Product(
         name="Patines en Línea Urban",
         category="skates",
@@ -187,7 +187,7 @@ def init_db(db: Session):
         image_url="https://images.unsplash.com/photo-1615670318351-d16f7ed3f74c?q=80&w=1200"
     )
     
-    # 16. Traditional skates (quad)
+    # 16. Patines tradicionales (quad)
     quad_skates = Product(
         name="Patines Clásicos Retro",
         category="skates",
@@ -197,7 +197,7 @@ def init_db(db: Session):
         image_url="https://plus.unsplash.com/premium_photo-1664444389247-d63164696f8f?q=80&w=1200"
     )
     
-    # 17. Paddle board
+    # 17. Tabla de paddle surf
     paddleboard = Product(
         name="Paddle Surf Performance",
         category="surf",
@@ -207,7 +207,7 @@ def init_db(db: Session):
         image_url="https://images.unsplash.com/photo-1600970188293-313e1f61beb0?q=80&w=1200"
     )
     
-    # 18. Snowboard
+    # 18. Tabla de snowboard
     snowboard = Product(
         name="Snowboard All Mountain",
         category="snow",
@@ -217,20 +217,20 @@ def init_db(db: Session):
         image_url="https://images.unsplash.com/photo-1610233426515-9e231999845d?q=80&w=1200"
     )
     
-    # Add all products to the database
+    # Añadir todos los productos a la base de datos
     db.add_all([
         mountain_bike, road_bike, urban_bike, hybrid_bike, electric_bike, 
         bmx_bike, gravel_bike, kids_bike, folding_bike, fixie_bike,
         alpine_ski, cross_country_ski, surfboard, bodyboard, 
         inline_skates, quad_skates, paddleboard, snowboard
     ])
-    db.flush()  # To get the generated ID
+    db.flush()  # Para obtener el ID generado
     
-    # Configuration of additional sports products with their customizable options
+    # Configuración de productos deportivos adicionales con sus opciones personalizables
     
-    # --------------------------------------------------------------------------
-    # ALPINE SKIS CONFIGURATION
-    # --------------------------------------------------------------------------
+    #--------------------------------------------------------------------------
+    # CONFIGURACIÓN DE ESQUÍS ALPINOS
+    #--------------------------------------------------------------------------
     
     ski_size = PartType(name="Talla", product_id=alpine_ski.id)
     ski_binding = PartType(name="Fijaciones", product_id=alpine_ski.id)
@@ -239,7 +239,7 @@ def init_db(db: Session):
     db.add_all([ski_size, ski_binding, ski_level])
     db.flush()
     
-    # Size options
+    # Opciones para talla
     ski_size_150 = PartOption(
         name="150 cm",
         part_type_id=ski_size.id,
@@ -259,7 +259,7 @@ def init_db(db: Session):
         in_stock=True
     )
     
-    # Binding options
+    # Opciones para fijaciones
     ski_binding_basic = PartOption(
         name="Fijaciones Básicas",
         part_type_id=ski_binding.id,
@@ -273,11 +273,11 @@ def init_db(db: Session):
         in_stock=True
     )
     
-    # Level options
+    # Opciones para nivel
     ski_level_beginner = PartOption(
         name="Principiante",
         part_type_id=ski_level.id,
-        base_price=Decimal("0.00"),  # Precio más bajo para principiantes
+        base_price=Decimal("-50.00"),  # Descuento para principiantes
         in_stock=True
     )
     ski_level_intermediate = PartOption(
@@ -300,9 +300,9 @@ def init_db(db: Session):
     ])
     db.flush()
     
-    # Dependencies for skis
+    # Dependencias para esquís
     
-    # Advanced level requires advanced bindings
+    # Nivel avanzado requiere fijaciones avanzadas
     ski_expert_req_advanced_binding = OptionDependency(
         option_id=ski_level_expert.id,
         depends_on_option_id=ski_binding_advanced.id,
@@ -313,7 +313,7 @@ def init_db(db: Session):
     db.flush()
     
     #--------------------------------------------------------------------------
-    # SURFBOARD CONFIGURATION
+    # CONFIGURACIÓN DE TABLA DE SURF
     #--------------------------------------------------------------------------
     
     surf_size = PartType(name="Tamaño", product_id=surfboard.id)
@@ -323,11 +323,11 @@ def init_db(db: Session):
     db.add_all([surf_size, surf_fins, surf_construction])
     db.flush()
     
-    # Size options
+    # Opciones para tamaño
     surf_size_small = PartOption(
         name="6'0\" - Shortboard",
         part_type_id=surf_size.id,
-        base_price=Decimal("0.00"),
+        base_price=Decimal("-50.00"),
         in_stock=True
     )
     surf_size_medium = PartOption(
@@ -343,7 +343,7 @@ def init_db(db: Session):
         in_stock=True
     )
     
-    # Fin options
+    # Opciones para quillas
     surf_fins_single = PartOption(
         name="Single Fin",
         part_type_id=surf_fins.id,
@@ -363,11 +363,11 @@ def init_db(db: Session):
         in_stock=True
     )
     
-    # Construction options
+    # Opciones para construcción
     surf_const_foam = PartOption(
         name="Foam - Principiantes",
         part_type_id=surf_construction.id,
-        base_price=Decimal("0.00"),
+        base_price=Decimal("-100.00"),
         in_stock=True
     )
     surf_const_epoxy = PartOption(
@@ -390,16 +390,16 @@ def init_db(db: Session):
     ])
     db.flush()
     
-    # Dependencies for surfboards
+    # Dependencias para tablas de surf
     
-    # Quad fins not available for small boards
+    # Quillas quad no disponibles para tablas pequeñas
     surf_small_exclude_quad = OptionDependency(
         option_id=surf_size_small.id,
         depends_on_option_id=surf_fins_quad.id,
         type=DependencyType.excludes
     )
     
-    # Single fin typically for longboards
+    # Single fin típicamente para longboards
     surf_single_requires_large = OptionDependency(
         option_id=surf_fins_single.id,
         depends_on_option_id=surf_size_large.id,
@@ -410,8 +410,8 @@ def init_db(db: Session):
     db.flush()
     
     #--------------------------------------------------------------------------
-    # INLINE SKATES CONFIGURATION
-    # --------------------------------------------------------------------------
+    # CONFIGURACIÓN DE PATINES EN LÍNEA
+    #--------------------------------------------------------------------------
     
     skate_size = PartType(name="Talla", product_id=inline_skates.id)
     skate_wheels = PartType(name="Ruedas", product_id=inline_skates.id)
@@ -420,7 +420,7 @@ def init_db(db: Session):
     db.add_all([skate_size, skate_wheels, skate_bearings])
     db.flush()
     
-    # Size options
+    # Opciones para talla
     skate_size_38 = PartOption(
         name="38 EU",
         part_type_id=skate_size.id,
@@ -446,7 +446,7 @@ def init_db(db: Session):
         in_stock=False
     )
     
-    # Wheel options
+    # Opciones para ruedas
     skate_wheels_76mm = PartOption(
         name="76mm - Estándar",
         part_type_id=skate_wheels.id,
@@ -466,7 +466,7 @@ def init_db(db: Session):
         in_stock=True
     )
     
-    # Bearing options
+    # Opciones para rodamientos
     skate_bearings_abec5 = PartOption(
         name="ABEC 5 - Estándar",
         part_type_id=skate_bearings.id,
@@ -493,9 +493,9 @@ def init_db(db: Session):
     ])
     db.flush()
     
-    # Dependencies for skates
+    # Dependencias para patines
     
-    # Large wheels (90mm) require premium bearings
+    # Ruedas grandes (90mm) requieren rodamientos premium
     skate_90mm_req_abec7 = OptionDependency(
         option_id=skate_wheels_90mm.id,
         depends_on_option_id=skate_bearings_abec7.id,
@@ -505,9 +505,9 @@ def init_db(db: Session):
     db.add_all([skate_90mm_req_abec7])
     db.flush()
     
-    # Conditional prices
+    # Precios condicionales
     
-    # Discount when choosing premium bearings and premium wheels together
+    # Descuento al elegir rodamientos premium y ruedas premium juntos
     skate_premium_bundle = ConditionalPrice(
         option_id=skate_bearings_abec9.id,
         condition_option_id=skate_wheels_90mm.id,
@@ -517,10 +517,10 @@ def init_db(db: Session):
     db.add_all([skate_premium_bundle])
     db.flush()
     
-    # From here continues the original bicycle configuration
-    # --------------------------------------------------------------------------
-    # MOUNTAIN BIKE CONFIGURATION AS MAIN EXAMPLE
-    # --------------------------------------------------------------------------
+    # A partir de aquí continúa la configuración original de las bicicletas
+    #--------------------------------------------------------------------------
+    # CONFIGURACIÓN DE MOUNTAIN BIKE COMO EJEMPLO PRINCIPAL
+    #--------------------------------------------------------------------------
     
     mt_frame = PartType(name="Cuadro", product_id=mountain_bike.id)
     mt_fork = PartType(name="Horquilla", product_id=mountain_bike.id)
@@ -533,7 +533,7 @@ def init_db(db: Session):
     db.add_all([mt_frame, mt_fork, mt_wheels, mt_brakes, mt_drivetrain, mt_seatpost, mt_handlebar])
     db.flush()
     
-    # Frame options
+    # Opciones para el cuadro
     mt_carbon_frame = PartOption(
         name="Cuadro Carbono MTB",
         part_type_id=mt_frame.id,
@@ -553,7 +553,7 @@ def init_db(db: Session):
         in_stock=True
     )
     
-    # Fork options
+    # Opciones para la horquilla
     mt_fox_fork = PartOption(
         name="Fox 36 Factory",
         part_type_id=mt_fork.id,
@@ -573,7 +573,7 @@ def init_db(db: Session):
         in_stock=False
     )
     
-    # Wheel options
+    # Opciones para ruedas
     mt_carbon_wheels = PartOption(
         name="Ruedas Carbono 29\"",
         part_type_id=mt_wheels.id,
@@ -593,7 +593,7 @@ def init_db(db: Session):
         in_stock=True
     )
     
-    # Brake options
+    # Opciones para frenos
     mt_shimano_brakes = PartOption(
         name="Frenos Shimano XT",
         part_type_id=mt_brakes.id,
@@ -613,7 +613,7 @@ def init_db(db: Session):
         in_stock=True
     )
     
-    # Drivetrain options
+    # Opciones para transmisión
     mt_shimano_drivetrain = PartOption(
         name="Shimano Deore XT 12v",
         part_type_id=mt_drivetrain.id,
@@ -633,7 +633,7 @@ def init_db(db: Session):
         in_stock=True
     )
     
-    # Add mountain bike options to DB
+    # Añadir las opciones de mountain bike a la BD
     db.add_all([
         mt_carbon_frame, mt_aluminum_frame, mt_steel_frame,
         mt_fox_fork, mt_rockshox_fork, mt_entry_fork,
@@ -643,23 +643,23 @@ def init_db(db: Session):
     ])
     db.flush()
     
-    # Dependencies for Mountain Bike
+    # Dependencias para Mountain Bike
     
-    # Carbon wheels only compatible with carbon frame for performance reasons
+    # Ruedas de carbono solo compatibles con cuadro de carbono por temas de rendimiento
     mt_carbon_wheels_req_carbon_frame = OptionDependency(
         option_id=mt_carbon_wheels.id,
         depends_on_option_id=mt_carbon_frame.id,
         type=DependencyType.requires
     )
     
-    # Fat Bikes are not compatible with high-performance forks
+    # Los Fat Bikes no son compatibles con horquillas de alto rendimiento
     mt_fat_wheels_exclude_fox = OptionDependency(
         option_id=mt_fat_wheels.id,
         depends_on_option_id=mt_fox_fork.id,
         type=DependencyType.excludes
     )
     
-    # Premium brakes recommend premium drivetrains
+    # Para frenos premium se recomiendan transmisiones premium
     mt_sram_brakes_req_sram_drivetrain = OptionDependency(
         option_id=mt_sram_brakes.id,
         depends_on_option_id=mt_sram_drivetrain.id,
@@ -673,16 +673,16 @@ def init_db(db: Session):
     ])
     db.flush()
     
-    # Conditional prices for Mountain Bike
+    # Precios condicionales para Mountain Bike
     
-    # When choosing carbon frame and Fox fork, there's a bundle discount
+    # Cuando eliges cuadro de carbono y horquilla Fox, hay un descuento en el conjunto
     mt_fox_carbon_price = ConditionalPrice(
         option_id=mt_fox_fork.id,
         condition_option_id=mt_carbon_frame.id,
-        conditional_price=Decimal("1799.00")  # 100€ de descuento
+        conditional_price=Decimal("799.00")  # 100€ de descuento
     )
     
-    # If you choose Shimano brakes with Shimano drivetrain there's better integration and discount
+    # Si eliges frenos Shimano con transmisión Shimano hay mejor integración y descuento
     mt_shimano_integration = ConditionalPrice(
         option_id=mt_shimano_brakes.id,
         condition_option_id=mt_shimano_drivetrain.id,
@@ -695,9 +695,9 @@ def init_db(db: Session):
     ])
     db.flush()
     
-    # --------------------------------------------------------------------------
-    # ROAD BIKE
-    # --------------------------------------------------------------------------
+    #--------------------------------------------------------------------------
+    # BICICLETA DE CARRETERA
+    #--------------------------------------------------------------------------
     
     rd_frame = PartType(name="Cuadro", product_id=road_bike.id)
     rd_fork = PartType(name="Horquilla", product_id=road_bike.id)
@@ -709,7 +709,7 @@ def init_db(db: Session):
     db.add_all([rd_frame, rd_fork, rd_wheels, rd_groupset, rd_handlebar, rd_tires])
     db.flush()
     
-    # Frame options
+    # Opciones para el cuadro
     rd_carbon_frame = PartOption(
         name="Cuadro Carbono Aero",
         part_type_id=rd_frame.id,
@@ -729,7 +729,7 @@ def init_db(db: Session):
         in_stock=True
     )
     
-    # Fork options
+    # Opciones para la horquilla
     rd_carbon_fork = PartOption(
         name="Horquilla Carbono Aero",
         part_type_id=rd_fork.id,
@@ -743,7 +743,7 @@ def init_db(db: Session):
         in_stock=True
     )
     
-    # Wheel options
+    # Opciones para ruedas
     rd_carbon_wheels = PartOption(
         name="Ruedas Carbono 50mm",
         part_type_id=rd_wheels.id,
@@ -763,7 +763,7 @@ def init_db(db: Session):
         in_stock=False
     )
     
-    # Groupset options
+    # Opciones para grupo
     rd_shimano_105 = PartOption(
         name="Shimano 105 R7000",
         part_type_id=rd_groupset.id,
@@ -783,7 +783,7 @@ def init_db(db: Session):
         in_stock=True
     )
     
-    # Handlebar options
+    # Opciones para manillar
     rd_drop_handlebar = PartOption(
         name="Manillar Drop Carbon",
         part_type_id=rd_handlebar.id,
@@ -797,7 +797,7 @@ def init_db(db: Session):
         in_stock=True
     )
     
-    # Tire options
+    # Opciones para neumáticos
     rd_race_tires = PartOption(
         name="Neumáticos Continental GP5000",
         part_type_id=rd_tires.id,
@@ -817,37 +817,48 @@ def init_db(db: Session):
         in_stock=True
     )
     
-    # Dependencies for road bike
+    # Añadir opciones de carretera a la BD
+    db.add_all([
+        rd_carbon_frame, rd_aluminum_frame, rd_endurance_frame,
+        rd_carbon_fork, rd_endurance_fork,
+        rd_carbon_wheels, rd_aluminum_wheels, rd_gravel_wheels,
+        rd_shimano_105, rd_shimano_ultegra, rd_sram_rival,
+        rd_drop_handlebar, rd_aero_handlebar,
+        rd_race_tires, rd_endurance_tires, rd_gravel_tires
+    ])
+    db.flush()
     
-    # Carbon Aero frame works better with Aero fork
+    # Dependencias para bicicleta de carretera
+    
+    # El cuadro Aero de carbono queda mejor con horquilla Aero
     rd_carbon_aero_req_aero_fork = OptionDependency(
         option_id=rd_carbon_frame.id,
         depends_on_option_id=rd_carbon_fork.id,
         type=DependencyType.requires
     )
     
-    # Endurance frame works better with Endurance fork
+    # El cuadro Endurance va mejor con horquilla Endurance
     rd_endurance_req_endurance_fork = OptionDependency(
         option_id=rd_endurance_frame.id,
         depends_on_option_id=rd_endurance_fork.id,
         type=DependencyType.requires
     )
     
-    # High profile carbon wheels work better with aero frame
+    # Las ruedas de carbono de perfil alto quedan mejor con cuadro aerodinámico
     rd_carbon_wheels_req_aero_frame = OptionDependency(
         option_id=rd_carbon_wheels.id,
         depends_on_option_id=rd_carbon_frame.id,
         type=DependencyType.requires
     )
     
-    # Aero handlebar only compatible with aero frame
+    # Manillar aero solo compatible con cuadro aero
     rd_aero_handlebar_req_aero_frame = OptionDependency(
         option_id=rd_aero_handlebar.id,
         depends_on_option_id=rd_carbon_frame.id,
         type=DependencyType.requires
     )
     
-    # Gravel tires not compatible with aero wheels
+    # Neumáticos de gravel no compatibles con ruedas aero
     rd_gravel_tires_exclude_carbon_wheels = OptionDependency(
         option_id=rd_gravel_tires.id,
         depends_on_option_id=rd_carbon_wheels.id,
@@ -863,16 +874,16 @@ def init_db(db: Session):
     ])
     db.flush()
     
-    # Conditional prices for road bike
+    # Precios condicionales para bicicleta de carretera
     
-    # Discount for choosing Ultegra with carbon frame (premium package)
+    # Descuento por elegir grupo Ultegra con cuadro de carbono (paquete premium)
     rd_ultegra_carbon_discount = ConditionalPrice(
         option_id=rd_shimano_ultegra.id,
         condition_option_id=rd_carbon_frame.id,
         conditional_price=Decimal("999.00")  # 200€ descuento
     )
     
-    # GP5000 tires cheaper with carbon wheels (popular bundle)
+    # Neumáticos GP5000 más baratos con ruedas de carbono (bundle popular)
     rd_gp5000_carbon_wheels_discount = ConditionalPrice(
         option_id=rd_race_tires.id,
         condition_option_id=rd_carbon_wheels.id,
@@ -885,9 +896,9 @@ def init_db(db: Session):
     ])
     db.flush()
     
-    # --------------------------------------------------------------------------
-    # ELECTRIC BIKE
-    # --------------------------------------------------------------------------
+    #--------------------------------------------------------------------------
+    # BICICLETA ELÉCTRICA
+    #--------------------------------------------------------------------------
     
     eb_frame = PartType(name="Cuadro", product_id=electric_bike.id)
     eb_motor = PartType(name="Motor", product_id=electric_bike.id)
@@ -899,7 +910,7 @@ def init_db(db: Session):
     db.add_all([eb_frame, eb_motor, eb_battery, eb_display, eb_brakes, eb_wheels])
     db.flush()
     
-    # Frame options
+    # Opciones para cuadro
     eb_urban_frame = PartOption(
         name="Cuadro Urbano Step-Through",
         part_type_id=eb_frame.id,
@@ -919,7 +930,7 @@ def init_db(db: Session):
         in_stock=True
     )
     
-    # Motor options
+    # Opciones para motor
     eb_bosch_motor = PartOption(
         name="Motor Bosch Performance CX",
         part_type_id=eb_motor.id,
@@ -939,7 +950,7 @@ def init_db(db: Session):
         in_stock=False
     )
     
-    # Battery options
+    # Opciones para batería
     eb_large_battery = PartOption(
         name="Batería 750Wh",
         part_type_id=eb_battery.id,
@@ -959,7 +970,7 @@ def init_db(db: Session):
         in_stock=True
     )
     
-    # Display options
+    # Opciones para display
     eb_color_display = PartOption(
         name="Display LCD Color Bosch Kiox",
         part_type_id=eb_display.id,
@@ -979,32 +990,48 @@ def init_db(db: Session):
         in_stock=True
     )
     
-    # Dependencies for e-bikes
+    # Añadir opciones de e-bike a la BD
+    db.add_all([
+        eb_urban_frame, eb_trekking_frame, eb_mtb_frame,
+        eb_bosch_motor, eb_shimano_motor, eb_brose_motor,
+        eb_large_battery, eb_medium_battery, eb_small_battery,
+        eb_color_display, eb_basic_display, eb_smartphone_hub
+    ])
+    db.flush()
     
-    # Bosch motor only compatible with Bosch display
+    # Dependencias para e-bikes
+    
+    # Motor Bosch solo compatible con display Bosch
     eb_bosch_motor_req_bosch_display = OptionDependency(
         option_id=eb_bosch_motor.id,
         depends_on_option_id=eb_color_display.id,
         type=DependencyType.requires
     )
     
-    # Large battery not available for urban step-through frame
+    # Batería grande no disponible para cuadro urbano step-through
     eb_large_battery_exclude_urban = OptionDependency(
         option_id=eb_large_battery.id,
         depends_on_option_id=eb_urban_frame.id,
         type=DependencyType.excludes
     )
     
-    # Shimano motor requires compatible display
+    # Motor Shimano requiere display compatible
     eb_shimano_motor_exclude_color_display = OptionDependency(
         option_id=eb_shimano_motor.id,
         depends_on_option_id=eb_color_display.id,
         type=DependencyType.excludes
     )
     
-    # Conditional prices for e-bikes
+    db.add_all([
+        eb_bosch_motor_req_bosch_display,
+        eb_large_battery_exclude_urban,
+        eb_shimano_motor_exclude_color_display
+    ])
+    db.flush()
     
-    # Discount when choosing Bosch motor and battery of the same capacity
+    # Precios condicionales para e-bikes
+    
+    # Descuento al elegir motor y batería Bosch de la misma capacidad
     eb_bosch_battery_bundle = ConditionalPrice(
         option_id=eb_large_battery.id,
         condition_option_id=eb_bosch_motor.id,
@@ -1012,15 +1039,12 @@ def init_db(db: Session):
     )
     
     db.add_all([
-        eb_bosch_motor_req_bosch_display,
-        eb_large_battery_exclude_urban,
-        eb_shimano_motor_exclude_color_display,
         eb_bosch_battery_bundle
     ])
     
     db.commit()
     
-    print("Database initialized with expanded and realistic sample data")
+    print("Base de datos inicializada con datos de ejemplo ampliados y realistas")
 
 def create_initial_data(db: Session):
     try:
