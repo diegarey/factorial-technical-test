@@ -46,6 +46,11 @@ const transformProductData = (data: any): Product => {
   return transformed;
 };
 
+interface PriceResponse {
+  total_price: number;
+  conditional_prices?: Record<string, any>;
+}
+
 export const ProductsApi = {
   /**
    * Gets the list of all products
@@ -228,36 +233,45 @@ export const ProductsApi = {
   /**
    * Calculates the price of a product with selected options
    */
-  calculatePrice: async (selectedOptions: number[]): Promise<number> => {
+  calculatePrice: async (selectedOptions: number[]): Promise<PriceResponse> => {
     try {
       // Try to get the product ID from the first selected option
       let productId = null;
       if (selectedOptions.length > 0) {
         try {
-          // This logic will be implemented in the backend, so we avoid making additional calls here
           console.log('Usando opción seleccionada para inferir el producto en calculate-price:', selectedOptions[0]);
         } catch (inferError) {
           console.warn('No se pudo inferir el productId a partir de las opciones seleccionadas:', inferError);
         }
       }
 
-      // Change the structure to adapt to what the backend expects
       const requestBody = {
-        product_id: productId, // This value will be null and the backend will detect it and act accordingly
+        product_id: productId,
         selected_options: selectedOptions
       };
+
+      console.log('Enviando solicitud de cálculo de precio:', JSON.stringify(requestBody));
       
       const response = await apiClient.post(getApiUrl('products/calculate-price'), requestBody);
+      console.log('Respuesta bruta del API para calculate-price:', JSON.stringify(response.data));
       
-      // Get the price from the response object and ensure it's a valid number
-      const total_price = response.data.total_price;
+      // Asegurarse de que la respuesta tenga el formato esperado
+      const priceResponse: PriceResponse = {
+        total_price: Number(response.data.total_price) || 0
+      };
       
-      // Use our utility function to convert and validate the price
-      return convertToValidPrice(total_price, 0);
+      // Si el backend devuelve precios condicionales, procesarlos
+      if (response.data.conditional_prices) {
+        console.log('El backend devolvió precios condicionales:', response.data.conditional_prices);
+        
+        // Guardar los precios condicionales tal como vienen del backend
+        priceResponse.conditional_prices = response.data.conditional_prices;
+      }
+      
+      return priceResponse;
     } catch (error) {
-      console.error('Error al calcular precio:', error);
-      // If it fails, return 0 to avoid breaking the UI
-      return 0;
+      console.error('Error calculating price:', error);
+      throw error;
     }
   },
 

@@ -11,20 +11,63 @@ interface CustomizeProductProps {
   product: Product;
 }
 
+interface ConditionalPriceInfo {
+  originalPrice: number;
+  conditionalPrice: number;
+}
+
+interface ConditionalPricesMap {
+  [key: number]: ConditionalPriceInfo;
+}
+
 const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
   const router = useRouter();
   const [selectedOptions, setSelectedOptions] = useState<Record<number, number>>({});
-  const [totalPrice, setTotalPrice] = useState<number>(0); // Initialize to 0 and update in useEffect
+  const [totalPrice, setTotalPrice] = useState<number>(0);
   const [availableOptions, setAvailableOptions] = useState<AvailablePartType[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState<number | null>(null);
-
+  const [conditionalPrices, setConditionalPrices] = useState<ConditionalPricesMap>({});
+  
   // Debug logging
   console.log('>>>>>>> PRODUCT RECEIVED IN CUSTOMIZEPRODUCT:', product);
   console.log('>>>>>>> PRODUCT BASE PRICE:', product.basePrice, typeof product.basePrice);
   console.log('>>>>>>> BASE PRICE CONVERTED TO NUMBER:', Number(product.basePrice));
   console.log('>>>>>>> COMPLETE PRODUCT OBJECT:', JSON.stringify(product, null, 2));
+
+  // Función auxiliar para aplicar precios condicionales
+  const applyConditionalPrices = (options: AvailablePartType[], condPrices: ConditionalPricesMap): AvailablePartType[] => {
+    console.log('🔧 Applying conditional prices to options');
+    
+    return options.map(partType => ({
+      ...partType,
+      options: partType.options.map(option => {
+        const conditionalPrice = condPrices[option.id];
+        if (conditionalPrice) {
+          console.log(`🔧 Option ${option.name} gets conditional price: ${option.base_price} -> ${conditionalPrice.conditionalPrice}`);
+          return {
+            ...option,
+            conditional_price: {
+              originalPrice: option.base_price,
+              conditionalPrice: conditionalPrice.conditionalPrice
+            }
+          };
+        }
+        return option;
+      })
+    }));
+  };
+
+  // Determine which options to show - use available options from API or product's partTypes
+  const usePartTypes = availableOptions.length === 0;
+  const partTypesToRender = usePartTypes ? (product.partTypes || []) : availableOptions;
+  
+  console.log('Using product partTypes options:', usePartTypes);
+  console.log('PartTypes to render:', partTypesToRender);
+
+  // Check if the product is customizable
+  const isProductPersonalizable = partTypesToRender.length > 0;
 
   // Effect to initialize the base price correctly - use ONLY API data
   useEffect(() => {
@@ -41,6 +84,56 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
     }
   }, [product]);
 
+  // Calcula el precio total basado en las opciones seleccionadas
+  useEffect(() => {
+    const calculateTotalPrice = async () => {
+      // Si no hay opciones seleccionadas, mostrar solo el precio base
+      if (Object.keys(selectedOptions).length === 0) {
+        setTotalPrice(product.basePrice || 0);
+        return;
+      }
+
+      try {
+        const selectedOptionIds = Object.values(selectedOptions);
+        console.log('Calculando precio para opciones seleccionadas:', selectedOptionIds);
+        
+        // Usar directamente la API para calcular el precio total
+        const priceResponse = await ProductsApi.calculatePrice(selectedOptionIds);
+        
+        if (priceResponse && typeof priceResponse.total_price === 'number') {
+          const basePrice = convertToValidPrice(product.basePrice, 0);
+          const optionsPrice = priceResponse.total_price;
+          const newTotalPrice = basePrice + optionsPrice;
+          
+          console.log(`Precio calculado desde el backend - Base: ${basePrice}, Opciones: ${optionsPrice}, Total: ${newTotalPrice}`);
+          setTotalPrice(newTotalPrice);
+        }
+      } catch (error) {
+        console.error('Error al calcular precio total:', error);
+        
+        // En caso de error, calcular el precio manualmente sumando los precios base
+        let manualTotal = product.basePrice || 0;
+        
+        Object.entries(selectedOptions).forEach(([partTypeIdStr, optionId]) => {
+          const partTypeId = Number(partTypeIdStr);
+          const partType = partTypesToRender.find(pt => pt.id === partTypeId);
+          
+          if (partType) {
+            const option = partType.options.find(opt => opt.id === optionId);
+            if (option) {
+              manualTotal += option.base_price;
+            }
+          }
+        });
+        
+        console.warn(`Usando cálculo manual de precio como fallback: ${manualTotal}`);
+        setTotalPrice(manualTotal);
+      }
+    };
+    
+    calculateTotalPrice();
+  }, [selectedOptions, product.basePrice, partTypesToRender]);
+
   // Load available options when selection changes
   useEffect(() => {
     const loadOptions = async () => {
@@ -49,108 +142,139 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
       try {
         const selectedOptionIds = Object.values(selectedOptions);
         
-        console.log('Product ID for options:', product.id);
-        console.log('Selected options:', selectedOptionIds);
+        console.log('🔍 Product ID for options:', product.id);
+        console.log('🔍 Selected options:', selectedOptionIds);
         
         // Get available options from the API
         const options = await ProductsApi.getProductOptions(product.id, selectedOptionIds);
-        console.log('Available options received:', options);
+        console.log('🔍 Available options received:', options);
         
-        // Detailed log of options for debugging
+        // Para debug: examinar detalladamente cada opción
         options.forEach(partType => {
-          console.log(`Options for ${partType.name} (ID: ${partType.id}):`);
+          console.log(`🔍 Part type ${partType.name} (ID: ${partType.id}):`);
           partType.options.forEach(option => {
-            console.log(`- ${option.name} (ID: ${option.id}): compatible=${option.is_compatible}, available=${option.available_for_selection !== false}, selected=${option.selected || false}`);
+            console.log(`  - Option ${option.name} (ID: ${option.id}), price: ${option.base_price}`);
           });
         });
         
-        if (Array.isArray(options)) {
-          // Verify compatibility of selected options
-          if (selectedOptionIds.length > 0) {
-            try {
-              const compatibilityResult = await ProductsApi.validateCompatibility(selectedOptionIds, product.id);
-              console.log('Compatibility result:', compatibilityResult);
+        // Calculate total price and get conditional prices
+        if (selectedOptionIds.length > 0) {
+          try {
+            console.log('🔍 Calling calculatePrice with options:', selectedOptionIds);
+            const priceResponse = await ProductsApi.calculatePrice(selectedOptionIds);
+            console.log('🔍 Price response raw:', priceResponse);
+            console.log('🔍 Price response JSON:', JSON.stringify(priceResponse));
+            console.log('🔍 Total price from API:', priceResponse.total_price);
+            console.log('🔍 Conditional prices from API:', priceResponse.conditional_prices);
+            
+            // Procesar precios condicionales si existen
+            const conditionalPricesMap: ConditionalPricesMap = {};
+            
+            if (priceResponse.conditional_prices && typeof priceResponse.conditional_prices === 'object') {
+              console.log('🔍 Processing conditional prices:', priceResponse.conditional_prices);
               
-              // Update options with the compatibility result from the backend
-              if (compatibilityResult && compatibilityResult.product && compatibilityResult.product.components) {
-                // Use the backend response directly, which includes the updated compatibility status
-                const updatedComponents = compatibilityResult.product.components;
+              // Si es un objeto (no un array)
+              if (!Array.isArray(priceResponse.conditional_prices)) {
+                console.log('🔍 Conditional prices is an object with keys:', Object.keys(priceResponse.conditional_prices));
                 
-                // Convert components from API response format to frontend format
-                const updatedOptions = updatedComponents.map((component: any) => ({
-                  id: component.id,
-                  name: component.name,
-                  options: component.options.map((opt: any) => ({
-                    id: opt.id,
-                    name: opt.name,
-                    base_price: opt.base_price,
-                    in_stock: opt.in_stock,
-                    selected: opt.selected,
-                    is_compatible: opt.is_compatible,
-                    available_for_selection: opt.available_for_selection !== false,
-                    availability_reason: opt.availability_reason
-                  }))
-                }));
+                Object.entries(priceResponse.conditional_prices).forEach(([key, value]) => {
+                  const optionId = Number(key);
+                  
+                  console.log(`🔍 Processing price for option ID ${optionId}:`, value);
+                  
+                  // Buscar el precio original de esta opción
+                  let originalPrice = 0;
+                  const option = options.flatMap(pt => pt.options).find(opt => opt.id === optionId);
+                  if (option) {
+                    originalPrice = option.base_price;
+                    console.log(`🔍 Found original price for option ${option.name}: ${originalPrice}`);
+                  } else {
+                    console.log(`🔍 Could not find original price for option ID ${optionId}`);
+                  }
+                  
+                  // Determinar el precio condicional
+                  let conditionalPrice = 0;
+                  
+                  if (typeof value === 'number') {
+                    conditionalPrice = value;
+                    console.log(`🔍 Value is a number: ${conditionalPrice}`);
+                  } else if (value && typeof value === 'object') {
+                    console.log(`🔍 Value is an object:`, value);
+                    const valueObj = value as Record<string, any>;
+                    
+                    if ('conditionalPrice' in valueObj) {
+                      conditionalPrice = Number(valueObj.conditionalPrice);
+                      console.log(`🔍 Found conditionalPrice field: ${conditionalPrice}`);
+                    } else if ('price' in valueObj) {
+                      conditionalPrice = Number(valueObj.price);
+                      console.log(`🔍 Found price field: ${conditionalPrice}`);
+                    } else if ('conditional_price' in valueObj) {
+                      conditionalPrice = Number(valueObj.conditional_price);
+                      console.log(`🔍 Found conditional_price field: ${conditionalPrice}`);
+                    } else {
+                      conditionalPrice = Number(value);
+                      console.log(`🔍 Using value as number: ${conditionalPrice}`);
+                    }
+                  }
+                  
+                  if (conditionalPrice > 0) {
+                    conditionalPricesMap[optionId] = {
+                      originalPrice,
+                      conditionalPrice
+                    };
+                    console.log(`🔍 Final conditional price for option ${optionId}:`, conditionalPricesMap[optionId]);
+                  }
+                });
+              } 
+              // Si es un array
+              else if (Array.isArray(priceResponse.conditional_prices)) {
+                const condPricesArray = priceResponse.conditional_prices as any[];
+                console.log('🔍 Conditional prices is an array with length:', condPricesArray.length);
                 
-                console.log('Options updated with compatibility status:', updatedOptions);
-                setAvailableOptions(updatedOptions);
-              } else {
-                // If the response doesn't have the expected format, use the original options
-                console.warn('Compatibility response does not have the expected format, using original options');
-                setAvailableOptions(options);
+                condPricesArray.forEach(item => {
+                  if (item && typeof item === 'object' && 'option_id' in item) {
+                    const optionId = Number(item.option_id);
+                    const originalPrice = Number(item.original_price || item.originalPrice || 0);
+                    const conditionalPrice = Number(item.conditional_price || item.conditionalPrice || 0);
+                    
+                    conditionalPricesMap[optionId] = {
+                      originalPrice,
+                      conditionalPrice
+                    };
+                    console.log(`🔍 Added conditional price from array item for option ${optionId}:`, conditionalPricesMap[optionId]);
+                  }
+                });
               }
-            } catch (compatibilityError) {
-              console.error('Error validating compatibility:', compatibilityError);
-              // In case of compatibility error, show options as they come from the API
-              setAvailableOptions(options);
+              
+              console.log('🔍 Final conditional prices map:', conditionalPricesMap);
+            } else {
+              console.log('🔍 No conditional prices found in the response');
             }
-          } else {
+            
+            // Guardar los precios condicionales en el estado
+            setConditionalPrices(conditionalPricesMap);
+            
+            // Aplicar los precios condicionales a las opciones
+            console.log('🔍 Applying conditional prices to options');
+            const updatedOptions = applyConditionalPrices(options, conditionalPricesMap);
+            
+            console.log('🔍 Setting updated options with conditional prices');
+            setAvailableOptions(updatedOptions);
+            
+          } catch (priceError) {
+            console.error('Error calculating price:', priceError);
+            setConditionalPrices({});
             setAvailableOptions(options);
           }
-          
-          // Process auto-selected options from the backend
-          const newSelections = { ...selectedOptions };
-          let selectionUpdated = false;
-          
-          options.forEach(partType => {
-            partType.options.forEach(option => {
-              if (option.selected && (!newSelections[partType.id] || newSelections[partType.id] !== option.id)) {
-                console.log(`Auto-selecting option: ${option.name} (ID: ${option.id}) of type ${partType.name}`);
-                newSelections[partType.id] = option.id;
-                selectionUpdated = true;
-              }
-            });
-          });
-          
-          if (selectionUpdated) {
-            console.log('Updating selections with backend auto-selection:', newSelections);
-            setSelectedOptions(newSelections);
-          }
-          
-          // Calculate total price
-          if (selectedOptionIds.length > 0) {
-            try {
-              const price = await ProductsApi.calculatePrice(selectedOptionIds);
-              if (typeof price === 'number' && !isNaN(price)) {
-                const basePrice = typeof product.basePrice === 'number' && !isNaN(product.basePrice) ? product.basePrice : 0;
-                const newTotalPrice = basePrice + price;
-                setTotalPrice(Math.max(newTotalPrice, basePrice));
-              }
-            } catch (priceError) {
-              console.error('Error calculating price:', priceError);
-              setTotalPrice(product.basePrice || 0);
-            }
-          } else {
-            setTotalPrice(product.basePrice || 0);
-          }
         } else {
-          console.error('Unexpected options format:', options);
-          setError('The received options have an unexpected format.');
+          setConditionalPrices({});
+          setAvailableOptions(options);
         }
+        
       } catch (error) {
         console.error('Error loading options:', error);
         setError('No se pudieron cargar las opciones. Por favor, recarga la página.');
-        setTotalPrice(product.basePrice || 0);
+        setConditionalPrices({});
       } finally {
         setLoading(false);
       }
@@ -321,16 +445,6 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
     }
   };
 
-  // Determine which options to show - use available options from API or product's partTypes
-  const usePartTypes = availableOptions.length === 0;
-  const partTypesToRender = usePartTypes ? (product.partTypes || []) : availableOptions;
-  
-  console.log('Using product partTypes options:', usePartTypes);
-  console.log('PartTypes to render:', partTypesToRender);
-
-  // Check if the product is customizable
-  const isProductPersonalizable = partTypesToRender.length > 0;
-
   // New function to scroll to a section
   const scrollToSection = (partTypeId: number) => {
     setActiveSection(partTypeId);
@@ -476,15 +590,41 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
                 {partType.options && partType.options.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {partType.options.map((option) => {
-                      // Use directly the value of is_compatible from the backend
                       const isIncompatible = option.is_compatible === false;
                       const isNotAvailable = option.available_for_selection === false;
                       const isSelected = selectedOptions[partType.id] === option.id;
                       
-                      // Logs for debugging
-                      if (partType.name === 'Horquilla') {
-                        console.log(`Rendering horquilla ${option.name}: compatible=${option.is_compatible}, available=${option.available_for_selection !== false}, selected=${isSelected}`);
+                      // Debug para esta opción específica
+                      console.log(`🔶 Rendering option ${option.name} (ID: ${option.id}):`, {
+                        originalPrice: option.base_price,
+                        conditionalPrice: option.conditional_price,
+                        isSelected,
+                        isIncompatible,
+                        isNotAvailable
+                      });
+                      
+                      // Verificar si hay precio condicional para esta opción
+                      let hasConditionalPrice = false;
+                      let displayPrice = option.base_price;
+                      const originalPrice = option.base_price;
+                      
+                      // Revisar si tiene precio condicional en la opción directamente
+                      if (option.conditional_price) {
+                        console.log(`🔶 Option ${option.name} has conditional price:`, option.conditional_price);
+                        hasConditionalPrice = true;
+                        displayPrice = option.conditional_price.conditionalPrice;
                       }
+                      // O revisar si tiene precio condicional en el estado
+                      else if (conditionalPrices[option.id]) {
+                        console.log(`🔶 Option ${option.name} has conditional price in state:`, conditionalPrices[option.id]);
+                        hasConditionalPrice = true;
+                        displayPrice = conditionalPrices[option.id].conditionalPrice;
+                      }
+                      
+                      const showDiscount = hasConditionalPrice && displayPrice < originalPrice;
+                      
+                      // Debug final para este precio
+                      console.log(`🔶 Final price display for ${option.name}: original=${originalPrice}, display=${displayPrice}, showDiscount=${showDiscount}`);
                       
                       return (
                         <div 
@@ -502,14 +642,12 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
                           `}
                           onClick={() => {
                             if (isSelected) {
-                              // Allow deselection if already selected
                               handleOptionSelect(partType.id, option.id);
                             } else if (!isIncompatible && !isNotAvailable) {
                               handleOptionSelect(partType.id, option.id);
                             } else if (isNotAvailable) {
                               alert(`Ya has seleccionado otra opción de ${partType.name}. Debes deseleccionar esa opción primero.`);
                             } else {
-                              // Show a more descriptive alert that indicates why it's not compatible
                               alert(`La opción "${option.name}" no es compatible con tu selección actual. Por favor, selecciona otra opción o cambia tus selecciones previas.`);
                             }
                           }}
@@ -519,13 +657,29 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
                             <span className="text-gray-400 text-xs">{option.name}</span>
                           </div>
                           
-                          <div className="flex justify-between items-center">
+                          <div className="flex justify-between items-start">
                             <span className={`font-medium ${isIncompatible ? 'text-red-600' : isNotAvailable ? 'text-gray-500' : 'text-gray-800'}`}>
                               {option.name}
                             </span>
-                            <span className="text-primary font-bold">
-                              +€{option.base_price ? option.base_price.toFixed(2) : '0.00'}
-                            </span>
+                            <div className="flex flex-col items-end">
+                              {showDiscount ? (
+                                <>
+                                  <span className="text-sm line-through text-gray-400">
+                                    +€{originalPrice.toFixed(2)}
+                                  </span>
+                                  <span className="font-bold text-green-600">
+                                    +€{displayPrice.toFixed(2)}
+                                  </span>
+                                  <span className="text-xs text-green-600 mt-1">
+                                    ¡Precio especial!
+                                  </span>
+                                </>
+                              ) : (
+                                <span className="font-bold text-primary">
+                                  +€{displayPrice.toFixed(2)}
+                                </span>
+                              )}
+                            </div>
                           </div>
                           
                           {isIncompatible && (
@@ -554,7 +708,6 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
                             </div>
                           )}
 
-                          {/* Add a forbidden icon for incompatible options */}
                           {isIncompatible && (
                             <div className="absolute top-3 right-3 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center">
                               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -598,16 +751,6 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
                 </div>
               </div>
               
-              {/* Base price */}
-              <div className="rounded-lg bg-gray-50 p-4 mb-6">
-                <div className="flex justify-between mb-2">
-                  <span className="font-medium text-gray-700">Precio base</span>
-                  <span className="font-bold">
-                    €{formatPrice(product.basePrice)}
-                  </span>
-                </div>
-              </div>
-              
               {/* Selected options */}
               <div className="space-y-3 mb-6">
                 <h3 className="text-sm font-medium text-gray-500 mb-3">COMPONENTES SELECCIONADOS</h3>
@@ -617,55 +760,140 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
                   let selectedOptionName = 'No seleccionado';
                   let selectedOptionPrice = 0;
                   let isCompatible = true;
+                  let hasConditionalPrice = false;
+                  let displayPrice = 0;
+                  let originalPrice = 0;
                   
                   if (selectedOptionId) {
                     const option = partType.options.find(opt => opt.id === selectedOptionId);
                     if (option) {
                       selectedOptionName = option.name;
-                      selectedOptionPrice = option.base_price;
+                      originalPrice = option.base_price;
+                      selectedOptionPrice = originalPrice;
                       isCompatible = option.is_compatible !== false;
+                      
+                      console.log(`🔷 Summary for selected option ${option.name} (ID: ${option.id}):`, {
+                        originalPrice,
+                        conditionalPrice: option.conditional_price,
+                        conditionalPriceInState: conditionalPrices[option.id]
+                      });
+                      
+                      // Verificar si hay precio condicional (de dos maneras)
+                      // 1. Desde el objeto option
+                      if (option.conditional_price) {
+                        console.log(`🔷 Option ${option.name} has conditional price in object:`, option.conditional_price);
+                        hasConditionalPrice = true;
+                        displayPrice = option.conditional_price.conditionalPrice;
+                        selectedOptionPrice = displayPrice;
+                      }
+                      // 2. Desde el estado
+                      else if (conditionalPrices[selectedOptionId]) {
+                        console.log(`🔷 Option ${option.name} has conditional price in state:`, conditionalPrices[selectedOptionId]);
+                        hasConditionalPrice = true;
+                        displayPrice = conditionalPrices[selectedOptionId].conditionalPrice;
+                        selectedOptionPrice = displayPrice;
+                      } else {
+                        displayPrice = originalPrice;
+                      }
+                      
+                      console.log(`🔷 Final price for ${option.name} in summary: original=${originalPrice}, display=${displayPrice}, hasConditional=${hasConditionalPrice}`);
                     }
                   }
                   
                   return (
                     <div 
                       key={partType.id} 
-                      className={`p-3 rounded-lg ${selectedOptionId ? 'bg-gray-50' : 'bg-gray-50 bg-opacity-50'} cursor-pointer hover:bg-gray-100 transition-colors`}
+                      className={`p-4 rounded-lg ${selectedOptionId ? 'bg-gray-50' : 'bg-gray-50 bg-opacity-50'} cursor-pointer hover:bg-gray-100 transition-colors`}
                       onClick={() => scrollToSection(partType.id)}
                     >
-                      <div className="flex justify-between items-center">
-                        <div>
+                      <div className="flex justify-between items-start">
+                        <div className="flex-grow">
                           <span className="text-xs text-gray-500">{partType.name}</span>
                           <div className={`font-medium ${!isCompatible ? 'text-red-500' : 'text-gray-800'}`}>
                             {selectedOptionId ? selectedOptionName : 'No seleccionado'}
                           </div>
                         </div>
                         {selectedOptionId && (
-                          <div className="flex items-center">
-                            <span className="font-bold text-primary mr-2">
-                              +€{selectedOptionPrice ? selectedOptionPrice.toFixed(2) : '0.00'}
-                            </span>
-                            <button 
-                              onClick={(e) => {
-                                e.stopPropagation(); // Prevent the onClick of the container from being active
-                                handleOptionSelect(partType.id, selectedOptionId);
-                              }}
-                              className="text-gray-400 hover:text-red-500 transition-colors"
-                              title="Deseleccionar opción"
-                            >
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                              </svg>
-                            </button>
+                          <div className="flex flex-col items-end">
+                            {hasConditionalPrice ? (
+                              <>
+                                <div className="flex items-center">
+                                  <span className="line-through text-gray-400 mr-2">
+                                    +€{originalPrice.toFixed(2)}
+                                  </span>
+                                  <span className="font-bold text-green-600">
+                                    +€{displayPrice.toFixed(2)}
+                                  </span>
+                                </div>
+                                <div className="text-xs text-green-600 mt-1">
+                                  ¡Ahorro de €{(originalPrice - displayPrice).toFixed(2)}!
+                                </div>
+                              </>
+                            ) : (
+                              <span className="font-bold text-primary">
+                                +€{displayPrice.toFixed(2)}
+                              </span>
+                            )}
                           </div>
                         )}
                       </div>
+                      
+                      {hasConditionalPrice && (
+                        <div className="mt-2 text-sm bg-green-50 p-2 rounded-lg border border-green-100">
+                          <div className="flex items-center text-green-700">
+                            <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            Precio especial por combinación con otras opciones
+                          </div>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
               </div>
               
-              {/* Total */}
+              {/* Total y descuentos */}
+              <div className="rounded-lg bg-gray-50 p-4 mb-6">
+                <div className="flex justify-between mb-2">
+                  <span className="font-medium text-gray-700">Precio base</span>
+                  <span className="font-bold">€{formatPrice(product.basePrice)}</span>
+                </div>
+                
+                {Object.keys(conditionalPrices).length > 0 && (
+                  <div className="border-t border-gray-200 pt-2 mt-2">
+                    <div className="text-sm font-medium text-green-700 mb-2">Descuentos aplicados:</div>
+                    {Object.entries(conditionalPrices).map(([optionId, prices]) => {
+                      const partType = partTypesToRender.find(pt => 
+                        pt.options.some(opt => opt.id === parseInt(optionId))
+                      );
+                      const option = partType?.options.find(opt => opt.id === parseInt(optionId));
+                      const discount = prices.originalPrice - prices.conditionalPrice;
+                      
+                      if (!option) return null;
+
+                      return (
+                        <div key={optionId} className="flex justify-between text-sm py-1">
+                          <span className="text-gray-600">{option.name}</span>
+                          <span className="text-green-600 font-medium">-€{discount.toFixed(2)}</span>
+                        </div>
+                      );
+                    })}
+                    <div className="border-t border-gray-200 mt-2 pt-2">
+                      <div className="flex justify-between text-sm font-medium">
+                        <span className="text-gray-700">Ahorro total</span>
+                        <span className="text-green-600">
+                          -€{Object.values(conditionalPrices).reduce((total, price) => 
+                            total + (price.originalPrice - price.conditionalPrice), 0
+                          ).toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              {/* Subtotal */}
               <div className="border-t border-gray-200 pt-4 mb-6">
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-gray-600">Subtotal</span>
@@ -673,7 +901,7 @@ const CustomizeProduct: React.FC<CustomizeProductProps> = ({ product }) => {
                     €{totalPrice.toFixed(2)}
                   </span>
                 </div>
-                <p className="text-xs text-gray-500 mb-6">Precios incluyen IVA</p>
+                <p className="text-xs text-gray-500">Precios incluyen IVA</p>
               </div>
               
               {/* Add to cart button */}

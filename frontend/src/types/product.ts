@@ -28,6 +28,11 @@ export interface PartOption {
   availability_reason?: string;
   dependencies?: OptionDependency[];
   conditional_prices?: ConditionalPrice[];
+  conditional_price?: {
+    originalPrice: number;
+    conditionalPrice: number;
+    reason?: string;
+  };
 }
 
 export interface PartType {
@@ -59,6 +64,11 @@ export interface AvailableOption {
   available_for_selection?: boolean;
   selected?: boolean;
   availability_reason?: string;
+  conditional_price?: {
+    originalPrice: number;
+    conditionalPrice: number;
+    reason?: string;
+  };
 }
 
 export interface AvailablePartType {
