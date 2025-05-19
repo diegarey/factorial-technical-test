@@ -277,7 +277,7 @@ def init_db(db: Session):
     ski_level_beginner = PartOption(
         name="Principiante",
         part_type_id=ski_level.id,
-        base_price=Decimal("-50.00"),  # Descuento para principiantes
+        base_price=Decimal("0.00"),  # Precio más bajo para principiantes
         in_stock=True
     )
     ski_level_intermediate = PartOption(
@@ -327,7 +327,7 @@ def init_db(db: Session):
     surf_size_small = PartOption(
         name="6'0\" - Shortboard",
         part_type_id=surf_size.id,
-        base_price=Decimal("-50.00"),
+        base_price=Decimal("0.00"),
         in_stock=True
     )
     surf_size_medium = PartOption(
@@ -367,7 +367,7 @@ def init_db(db: Session):
     surf_const_foam = PartOption(
         name="Foam - Principiantes",
         part_type_id=surf_construction.id,
-        base_price=Decimal("-100.00"),
+        base_price=Decimal("0.00"),
         in_stock=True
     )
     surf_const_epoxy = PartOption(
